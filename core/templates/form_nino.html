@@ -1,0 +1,307 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Guardería Infantil{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="fw-bold">
+                <i class="bi bi-person-plus-fill text-primary"></i> {{ titulo }}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_ninos' %}">Niños</a></li>
+                    <li class="breadcrumb-item active">{{ titulo }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" novalidate>
+        {% csrf_token %}
+        
+        <!-- Información Personal -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-fill"></i> Información Personal
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre_completo.id_for_label }}" class="form-label">
+                            {{ form.nombre_completo.label }}
+                        </label>
+                        {{ form.nombre_completo }}
+                        {% if form.nombre_completo.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.nombre_completo.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="{{ form.edad.id_for_label }}" class="form-label">
+                            {{ form.edad.label }}
+                        </label>
+                        {{ form.edad }}
+                        {% if form.edad.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.edad.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <label for="{{ form.genero.id_for_label }}" class="form-label">
+                            {{ form.genero.label }}
+                        </label>
+                        {{ form.genero }}
+                        {% if form.genero.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.genero.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_nacimiento.id_for_label }}" class="form-label">
+                            {{ form.fecha_nacimiento.label }}
+                        </label>
+                        {{ form.fecha_nacimiento }}
+                        {% if form.fecha_nacimiento.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.fecha_nacimiento.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.foto.id_for_label }}" class="form-label">
+                            {{ form.foto.label }}
+                        </label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.foto.errors }}
+                            </div>
+                        {% endif %}
+                        {% if nino.foto %}
+                            <div class="mt-2">
+                                <img src="{{ nino.foto.url }}" alt="Foto actual" class="img-thumbnail" width="100">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información del Responsable -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-people-fill"></i> Información del Responsable
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre_responsable.id_for_label }}" class="form-label">
+                            {{ form.nombre_responsable.label }}
+                        </label>
+                        {{ form.nombre_responsable }}
+                        {% if form.nombre_responsable.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.nombre_responsable.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.parentesco.id_for_label }}" class="form-label">
+                            {{ form.parentesco.label }}
+                        </label>
+                        {{ form.parentesco }}
+                        {% if form.parentesco.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.parentesco.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.telefono_responsable.id_for_label }}" class="form-label">
+                            {{ form.telefono_responsable.label }}
+                        </label>
+                        {{ form.telefono_responsable }}
+                        {% if form.telefono_responsable.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.telefono_responsable.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.email_responsable.id_for_label }}" class="form-label">
+                            {{ form.email_responsable.label }}
+                        </label>
+                        {{ form.email_responsable }}
+                        {% if form.email_responsable.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.email_responsable.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Perfil Médico -->
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-heart-pulse-fill"></i> Perfil Médico
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.peso.id_for_label }}" class="form-label">
+                            {{ form.peso.label }}
+                        </label>
+                        {{ form.peso }}
+                        {% if form.peso.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.peso.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.altura.id_for_label }}" class="form-label">
+                            {{ form.altura.label }}
+                        </label>
+                        {{ form.altura }}
+                        {% if form.altura.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.altura.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.tipo_sangre.id_for_label }}" class="form-label">
+                            {{ form.tipo_sangre.label }}
+                        </label>
+                        {{ form.tipo_sangre }}
+                        {% if form.tipo_sangre.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.tipo_sangre.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label for="{{ form.alergias.id_for_label }}" class="form-label">
+                            {{ form.alergias.label }}
+                        </label>
+                        {{ form.alergias }}
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Campo obligatorio. Si no tiene alergias, escriba "Ninguna"
+                        </small>
+                        {% if form.alergias.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.alergias.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.enfermedades.id_for_label }}" class="form-label">
+                            {{ form.enfermedades.label }}
+                        </label>
+                        {{ form.enfermedades }}
+                        {% if form.enfermedades.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.enfermedades.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.medicamentos.id_for_label }}" class="form-label">
+                            {{ form.medicamentos.label }}
+                        </label>
+                        {{ form.medicamentos }}
+                        {% if form.medicamentos.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.medicamentos.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label for="{{ form.observaciones_medicas.id_for_label }}" class="form-label">
+                            {{ form.observaciones_medicas.label }}
+                        </label>
+                        {{ form.observaciones_medicas }}
+                        {% if form.observaciones_medicas.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.observaciones_medicas.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label for="{{ form.documento_medico.id_for_label }}" class="form-label">
+                            {{ form.documento_medico.label }}
+                        </label>
+                        {{ form.documento_medico }}
+                        <small class="form-text text-muted d-block">
+                            <i class="bi bi-info-circle"></i> Puede adjuntar recetas médicas, certificados, etc. (PDF, DOC, imágenes)
+                        </small>
+                        {% if form.documento_medico.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.documento_medico.errors }}
+                            </div>
+                        {% endif %}
+                        {% if nino.documento_medico %}
+                            <div class="mt-2">
+                                <a href="{{ nino.documento_medico.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-earmark-pdf"></i> Ver documento actual
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estado -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="form-check">
+                    {{ form.activo }}
+                    <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                        {{ form.activo.label }}
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Botones -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'lista_ninos' %}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-save-fill"></i> Guardar Información
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

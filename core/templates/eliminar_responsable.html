@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Eliminar - {{ responsable.nombre_completo }} - Guardería Infantil{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminación de Responsable
+                    </h4>
+                </div>
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        {% if responsable.foto %}
+                            <img src="{{ responsable.foto.url }}" 
+                                 alt="{{ responsable.nombre_completo }}" 
+                                 class="rounded-circle mb-3"
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                        {% else %}
+                            <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center mx-auto mb-3"
+                                 style="width: 120px; height: 120px; font-size: 3rem;">
+                                <i class="bi bi-person-badge-fill"></i>
+                            </div>
+                        {% endif %}
+                        <h3 class="fw-bold">{{ responsable.nombre_completo }}</h3>
+                        <p class="text-muted">{{ responsable.relacion }} de {{ nino.nombre_completo }}</p>
+                    </div>
+                    
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                        <strong>¡Atención!</strong> Estás a punto de eliminar permanentemente este responsable autorizado.
+                    </div>
+                    
+                    <p class="lead text-center mb-4">
+                        ¿Estás seguro de que deseas continuar?
+                    </p>
+                    
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-3">Información que se eliminará:</h6>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-muted"></i> 
+                                    <strong>Datos personales:</strong> {{ responsable.nombre_completo }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-muted"></i> 
+                                    <strong>Identificación:</strong> {{ responsable.identificacion }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-muted"></i> 
+                                    <strong>Contacto:</strong> {{ responsable.telefono }}
+                                </li>
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-muted"></i> 
+                                    <strong>Período de autorización</strong>
+                                </li>
+                                {% if responsable.tiene_firma %}
+                                <li class="mb-2">
+                                    <i class="bi bi-check text-muted"></i> 
+                                    <strong>Firma electrónica registrada</strong>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mb-4" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Importante:</strong> Esta acción no se puede deshacer. El responsable será eliminado permanentemente del sistema.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between gap-3">
+                            <a href="{% url 'detalle_responsable' responsable.pk %}" class="btn btn-secondary btn-lg flex-fill">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg flex-fill">
+                                <i class="bi bi-trash-fill"></i> Sí, Eliminar Responsable
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{% url 'lista_responsables' nino.pk %}" class="text-muted">
+                    <i class="bi bi-arrow-left"></i> Volver a la lista de responsables
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

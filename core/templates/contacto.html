@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Contacto - Guardería Infantil{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div style="background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%); color: white; padding: 60px 0;">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold mb-3">Contáctanos</h1>
+        <p class="lead">Estamos aquí para responder todas tus preguntas</p>
+    </div>
+</div>
+
+<div class="container my-5">
+    <div class="row">
+        <!-- Formulario de Contacto -->
+        <div class="col-lg-7 mb-4">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <h3 class="fw-bold mb-4">
+                        <i class="bi bi-envelope-fill text-primary"></i> Envíanos un Mensaje
+                    </h3>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre Completo *</label>
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="nombre" 
+                                   name="nombre" 
+                                   placeholder="Tu nombre completo"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Correo Electrónico *</label>
+                            <input type="email" 
+                                   class="form-control form-control-lg" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="tu@email.com"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="tel" 
+                                   class="form-control form-control-lg" 
+                                   id="telefono" 
+                                   name="telefono" 
+                                   placeholder="555-123-4567">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="asunto" class="form-label">Asunto *</label>
+                            <select class="form-select form-select-lg" id="asunto" name="asunto" required>
+                                <option value="">Selecciona un asunto</option>
+                                <option value="informacion">Información General</option>
+                                <option value="inscripcion">Proceso de Inscripción</option>
+                                <option value="costos">Costos y Pagos</option>
+                                <option value="visita">Agendar Visita</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="mensaje" class="form-label">Mensaje *</label>
+                            <textarea class="form-control" 
+                                      id="mensaje" 
+                                      name="mensaje" 
+                                      rows="5" 
+                                      placeholder="Escribe tu mensaje aquí..."
+                                      required></textarea>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send-fill"></i> Enviar Mensaje
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información de Contacto -->
+        <div class="col-lg-5 mb-4">
+            <!-- Datos de Contacto -->
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-4">
+                        <i class="bi bi-geo-alt-fill text-primary"></i> Información de Contacto
+                    </h4>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold">
+                            <i class="bi bi-building text-primary"></i> Dirección
+                        </h6>
+                        <p class="text-muted mb-0">
+                            Calle Principal #123<br>
+                            Colonia Centro<br>
+                            Ciudad, Estado CP 12345
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold">
+                            <i class="bi bi-telephone-fill text-success"></i> Teléfonos
+                        </h6>
+                        <p class="text-muted mb-1">
+                            <a href="tel:5551234567" class="text-decoration-none">
+                                (555) 123-4567
+                            </a>
+                        </p>
+                        <p class="text-muted mb-0">
+                            <a href="tel:5557654321" class="text-decoration-none">
+                                (555) 765-4321
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold">
+                            <i class="bi bi-envelope-fill text-danger"></i> Email
+                        </h6>
+                        <p class="text-muted mb-0">
+                            <a href="mailto:info@guarderia.com" class="text-decoration-none">
+                                info@guarderia.com
+                            </a>
+                        </p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold">
+                            <i class="bi bi-clock-fill text-warning"></i> Horario de Atención
+                        </h6>
+                        <p class="text-muted mb-1">
+                            <strong>Lunes a Viernes:</strong> 7:00 AM - 7:00 PM
+                        </p>
+                        <p class="text-muted mb-0">
+                            <strong>Sábados:</strong> 8:00 AM - 2:00 PM
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-share-fill text-info"></i> Síguenos
+                        </h6>
+                        <div class="d-flex gap-2">
+                            <a href="#" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-facebook"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-twitter"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-instagram"></i>
+                            </a>
+                            <a href="#" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-whatsapp"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mapa (Placeholder) -->
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-0">
+                    <div class="bg-light text-center p-5" style="min-height: 250px; display: flex; align-items: center; justify-content: center;">
+                        <div>
+                            <i class="bi bi-map text-muted" style="font-size: 4rem;"></i>
+                            <p class="text-muted mt-3 mb-0">Mapa de Ubicación</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Preguntas Frecuentes -->
+    <div class="mt-5">
+        <h2 class="text-center fw-bold mb-5">Preguntas Frecuentes</h2>
+        
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-question-circle-fill"></i> ¿Cuál es el proceso de inscripción?
+                        </h5>
+                        <p class="text-muted mb-0">
+                            El proceso es simple: contacta con nosotros, agenda una visita, completa el formulario 
+                            de registro y entrega la documentación requerida. ¡Así de fácil!
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-question-circle-fill"></i> ¿Qué documentos necesito?
+                        </h5>
+                        <p class="text-muted mb-0">
+                            Necesitas: acta de nacimiento, CURP, cartilla de vacunación actualizada, 
+                            comprobante de domicilio e identificación oficial de los padres o tutores.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-question-circle-fill"></i> ¿Ofrecen alimentación?
+                        </h5>
+                        <p class="text-muted mb-0">
+                            Sí, ofrecemos alimentación balanceada y nutritiva adaptada a las necesidades 
+                            de cada edad. Respetamos restricciones alimentarias y alergias.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold text-primary mb-3">
+                            <i class="bi bi-question-circle-fill"></i> ¿Puedo visitar las instalaciones?
+                        </h5>
+                        <p class="text-muted mb-0">
+                            ¡Por supuesto! Nos encantaría mostrarte nuestras instalaciones. 
+                            Agenda una cita y ven a conocernos. Será un placer atenderte.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar Sesión - Guardería Infantil{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock text-primary" style="font-size: 4rem;"></i>
+                        <h2 class="mt-3 fw-bold">Iniciar Sesión</h2>
+                        <p class="text-muted">Accede al sistema de gestión</p>
+                    </div>
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            Usuario o contraseña incorrectos. Por favor, intenta de nuevo.
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="id_username" class="form-label">
+                                <i class="bi bi-person-fill"></i> Usuario
+                            </label>
+                            <input type="text" 
+                                   name="username" 
+                                   class="form-control form-control-lg" 
+                                   id="id_username" 
+                                   placeholder="Ingresa tu usuario"
+                                   required
+                                   autofocus>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_password" class="form-label">
+                                <i class="bi bi-lock-fill"></i> Contraseña
+                            </label>
+                            <input type="password" 
+                                   name="password" 
+                                   class="form-control form-control-lg" 
+                                   id="id_password" 
+                                   placeholder="Ingresa tu contraseña"
+                                   required>
+                        </div>
+                        
+                        <input type="hidden" name="next" value="{{ next }}">
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'inicio' %}" class="text-muted text-decoration-none">
+                            <i class="bi bi-arrow-left"></i> Volver al inicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-3" role="alert">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <strong>Nota:</strong> Si no tienes credenciales, contacta al administrador del sistema.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

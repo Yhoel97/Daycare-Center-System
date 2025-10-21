@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+
+{% block title %}Responsables de {{ nino.nombre_completo }} - Guardería Infantil{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_ninos' %}">Niños</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'detalle_nino' nino.pk %}">{{ nino.nombre_completo }}</a></li>
+                    <li class="breadcrumb-item active">Responsables Autorizados</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="fw-bold">
+                <i class="bi bi-person-check-fill text-success"></i> Responsables Autorizados
+            </h1>
+            <p class="text-muted">
+                Personas autorizadas para retirar a <strong>{{ nino.nombre_completo }}</strong>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{% url 'registrar_responsable' nino.pk %}" class="btn btn-success btn-lg">
+                <i class="bi bi-person-plus-fill"></i> Agregar Responsable
+            </a>
+        </div>
+    </div>
+    
+    <!-- Información del Niño -->
+    <div class="card mb-4 bg-light">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    {% if nino.foto %}
+                        <img src="{{ nino.foto.url }}" alt="{{ nino.nombre_completo }}" 
+                             class="rounded-circle" width="60" height="60" style="object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                             style="width: 60px; height: 60px;">
+                            <i class="bi bi-person-fill fs-4"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col">
+                    <h5 class="mb-1">{{ nino.nombre_completo }}</h5>
+                    <p class="mb-0 text-muted">{{ nino.edad }} años</p>
+                </div>
+                <div class="col-auto">
+                    <a href="{% url 'detalle_nino' nino.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye-fill"></i> Ver Perfil del Niño
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de Responsables -->
+    {% if responsables %}
+        <div class="row">
+            {% for responsable in responsables %}
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 {% if not responsable.activo %}border-secondary{% elif responsable.autorizacion_vigente %}border-success{% else %}border-warning{% endif %}">
+                    <div class="card-header {% if not responsable.activo %}bg-secondary{% elif responsable.autorizacion_vigente %}bg-success{% else %}bg-warning{% endif %} text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">
+                                <i class="bi bi-person-badge"></i> {{ responsable.nombre_completo }}
+                            </h5>
+                            {% if responsable.autorizacion_vigente %}
+                                <span class="badge bg-light text-success">
+                                    <i class="bi bi-check-circle-fill"></i> Vigente
+                                </span>
+                            {% elif not responsable.activo %}
+                                <span class="badge bg-light text-secondary">
+                                    <i class="bi bi-x-circle-fill"></i> Inactivo
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-warning">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> No Vigente
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-auto">
+                                {% if responsable.foto %}
+                                    <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}"
+                                         class="rounded" width="80" height="80" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded bg-secondary text-white d-flex align-items-center justify-content-center"
+                                         style="width: 80px; height: 80px;">
+                                        <i class="bi bi-person-fill fs-2"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col">
+                                <p class="mb-1">
+                                    <i class="bi bi-heart-fill text-danger"></i>
+                                    <strong>Relación:</strong> {{ responsable.relacion }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="bi bi-telephone-fill text-primary"></i>
+                                    <strong>Teléfono:</strong> {{ responsable.telefono }}
+                                </p>
+                                <p class="mb-1">
+                                    <i class="bi bi-card-text text-info"></i>
+                                    <strong>ID:</strong> {{ responsable.identificacion }}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-range"></i> 
+                                <strong>Período:</strong> 
+                                {{ responsable.fecha_inicio_autorizacion|date:"d/m/Y" }}
+                                {% if responsable.fecha_fin_autorizacion %}
+                                    - {{ responsable.fecha_fin_autorizacion|date:"d/m/Y" }}
+                                {% else %}
+                                    - Permanente
+                                {% endif %}
+                            </small>
+                        </div>
+                        
+                        {% if responsable.dias_autorizados %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-calendar-week"></i>
+                                <strong>Días:</strong> {{ responsable.dias_autorizados }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        {% if responsable.hora_inicio and responsable.hora_fin %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="bi bi-clock-fill"></i>
+                                <strong>Horario:</strong> 
+                                {{ responsable.hora_inicio|time:"H:i" }} - {{ responsable.hora_fin|time:"H:i" }}
+                            </small>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-2">
+                            {% if responsable.tiene_firma %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-pen-fill"></i> Firma Electrónica Registrada
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-exclamation-triangle"></i> Sin Firma
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="btn-group w-100" role="group">
+                            <a href="{% url 'detalle_responsable' responsable.pk %}" 
+                               class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-eye-fill"></i> Ver
+                            </a>
+                            <a href="{% url 'editar_responsable' responsable.pk %}" 
+                               class="btn btn-outline-warning btn-sm">
+                                <i class="bi bi-pencil-fill"></i> Editar
+                            </a>
+                            <a href="{% url 'eliminar_responsable' responsable.pk %}" 
+                               class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-trash-fill"></i> Eliminar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center py-5" role="alert">
+            <i class="bi bi-info-circle" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No hay responsables autorizados registrados</h4>
+            <p>Agrega el primer responsable autorizado para retirar a {{ nino.nombre_completo }}</p>
+            <a href="{% url 'registrar_responsable' nino.pk %}" class="btn btn-success mt-3">
+                <i class="bi bi-person-plus-fill"></i> Agregar Primer Responsable
+            </a>
+        </div>
+    {% endif %}
+    
+    <!-- Botón volver -->
+    <div class="mt-4">
+        <a href="{% url 'detalle_nino' nino.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver al Perfil del Niño
+        </a>
+    </div>
+</div>
+{% endblock %}

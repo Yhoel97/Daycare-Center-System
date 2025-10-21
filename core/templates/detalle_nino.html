@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ nino.nombre_completo }} - Guardería Infantil{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_ninos' %}">Niños</a></li>
+                    <li class="breadcrumb-item active">{{ nino.nombre_completo }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <!-- Información Principal -->
+    <div class="card mb-4 shadow-lg">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    {% if nino.foto %}
+                        <img src="{{ nino.foto.url }}" 
+                             alt="{{ nino.nombre_completo }}" 
+                             class="rounded-circle img-fluid shadow"
+                             style="width: 150px; height: 150px; object-fit: cover;">
+                    {% else %}
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto shadow"
+                             style="width: 150px; height: 150px; font-size: 4rem;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-7">
+                    <h1 class="fw-bold mb-2">{{ nino.nombre_completo }}</h1>
+                    <p class="text-muted mb-3">
+                        <i class="bi bi-cake2-fill"></i> {{ nino.edad }} años
+                        {% if nino.fecha_nacimiento %}
+                            | Nacimiento: {{ nino.fecha_nacimiento|date:"d/m/Y" }}
+                        {% endif %}
+                        {% if nino.genero %}
+                            | {{ nino.get_genero_display }}
+                        {% endif %}
+                    </p>
+                    <div class="mb-2">
+                        {% if nino.activo %}
+                            <span class="badge bg-success badge-custom">
+                                <i class="bi bi-check-circle-fill"></i> Activo
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary badge-custom">
+                                <i class="bi bi-x-circle-fill"></i> Inactivo
+                            </span>
+                        {% endif %}
+                        
+                        {% if nino.tiene_alergias %}
+                            <span class="badge bg-warning text-dark badge-custom">
+                                <i class="bi bi-exclamation-triangle-fill"></i> Tiene Alergias
+                            </span>
+                        {% endif %}
+                        
+                        {% if nino.tiene_medicamentos %}
+                            <span class="badge bg-info badge-custom">
+                                <i class="bi bi-capsule"></i> Medicamentos
+                            </span>
+                        {% endif %}
+                    </div>
+                    <p class="text-muted small mb-0">
+                        <i class="bi bi-calendar-plus"></i> Registrado: {{ nino.fecha_registro|date:"d/m/Y H:i" }}
+                    </p>
+                </div>
+                <div class="col-md-3 text-end">
+                    <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-success btn-lg mb-2 w-100">
+                        <i class="bi bi-person-check-fill"></i> Responsables
+                    </a>
+                    <a href="{% url 'editar_nino' nino.pk %}" class="btn btn-warning btn-lg mb-2 w-100">
+                        <i class="bi bi-pencil-fill"></i> Editar
+                    </a>
+                    <a href="{% url 'eliminar_nino' nino.pk %}" class="btn btn-danger btn-lg w-100">
+                        <i class="bi bi-trash-fill"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- Perfil Personal -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-fill"></i> Perfil Personal
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th width="40%">
+                                    <i class="bi bi-person text-primary"></i> Nombre Completo:
+                                </th>
+                                <td>{{ nino.nombre_completo }}</td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="bi bi-cake2 text-primary"></i> Edad:
+                                </th>
+                                <td>{{ nino.edad }} años</td>
+                            </tr>
+                            {% if nino.fecha_nacimiento %}
+                            <tr>
+                                <th>
+                                    <i class="bi bi-calendar-event text-primary"></i> Fecha de Nacimiento:
+                                </th>
+                                <td>{{ nino.fecha_nacimiento|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if nino.genero %}
+                            <tr>
+                                <th>
+                                    <i class="bi bi-gender-ambiguous text-primary"></i> Género:
+                                </th>
+                                <td>{{ nino.get_genero_display }}</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Información del Responsable -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-people-fill"></i> Responsable
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tbody>
+                            <tr>
+                                <th width="40%">
+                                    <i class="bi bi-person-badge text-success"></i> Nombre:
+                                </th>
+                                <td>{{ nino.nombre_responsable }}</td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="bi bi-heart text-success"></i> Parentesco:
+                                </th>
+                                <td>{{ nino.parentesco }}</td>
+                            </tr>
+                            <tr>
+                                <th>
+                                    <i class="bi bi-telephone text-success"></i> Teléfono:
+                                </th>
+                                <td>
+                                    <a href="tel:{{ nino.telefono_responsable }}" class="text-decoration-none">
+                                        {{ nino.telefono_responsable }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% if nino.email_responsable %}
+                            <tr>
+                                <th>
+                                    <i class="bi bi-envelope text-success"></i> Email:
+                                </th>
+                                <td>
+                                    <a href="mailto:{{ nino.email_responsable }}" class="text-decoration-none">
+                                        {{ nino.email_responsable }}
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Responsables Autorizados -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-person-check-fill"></i> Responsables Autorizados
+            </h5>
+            <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-light btn-sm">
+                Ver Todos
+            </a>
+        </div>
+        <div class="card-body">
+            {% if nino.responsables_autorizados.all %}
+                <div class="row">
+                    {% for responsable in nino.responsables_autorizados.all|slice:":3" %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 {% if responsable.autorizacion_vigente %}border-success{% else %}border-secondary{% endif %}">
+                            <div class="card-body text-center p-3">
+                                {% if responsable.foto %}
+                                    <img src="{{ responsable.foto.url }}" alt="{{ responsable.nombre_completo }}"
+                                         class="rounded-circle mb-2" width="60" height="60" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center mx-auto mb-2"
+                                         style="width: 60px; height: 60px;">
+                                        <i class="bi bi-person-badge"></i>
+                                    </div>
+                                {% endif %}
+                                <h6 class="mb-1">{{ responsable.nombre_completo }}</h6>
+                                <small class="text-muted d-block mb-2">{{ responsable.relacion }}</small>
+                                {% if responsable.autorizacion_vigente %}
+                                    <span class="badge bg-success">Vigente</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No Vigente</span>
+                                {% endif %}
+                                {% if responsable.tiene_firma %}
+                                    <span class="badge bg-info">Firmado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if nino.responsables_autorizados.count > 3 %}
+                    <div class="text-center mt-2">
+                        <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-outline-success">
+                            Ver los {{ nino.responsables_autorizados.count }} responsables
+                        </a>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-info-circle text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-2">No hay responsables autorizados registrados</p>
+                    <a href="{% url 'registrar_responsable' nino.pk %}" class="btn btn-success btn-sm">
+                        <i class="bi bi-person-plus-fill"></i> Agregar Responsable
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Perfil Médico -->
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-heart-pulse-fill"></i> Perfil Médico
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold text-danger">
+                        <i class="bi bi-speedometer2"></i> Datos Físicos
+                    </h6>
+                    <table class="table table-sm table-borderless">
+                        <tbody>
+                            {% if nino.peso %}
+                            <tr>
+                                <th width="40%">Peso:</th>
+                                <td>{{ nino.peso }} kg</td>
+                            </tr>
+                            {% endif %}
+                            {% if nino.altura %}
+                            <tr>
+                                <th>Altura:</th>
+                                <td>{{ nino.altura }} cm</td>
+                            </tr>
+                            {% endif %}
+                            {% if nino.tipo_sangre %}
+                            <tr>
+                                <th>Tipo de Sangre:</th>
+                                <td><span class="badge bg-danger">{{ nino.tipo_sangre }}</span></td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold text-danger">
+                        <i class="bi bi-clipboard2-pulse"></i> Condiciones Médicas
+                    </h6>
+                    <div class="mb-2">
+                        <strong>Alergias:</strong>
+                        {% if nino.alergias %}
+                            <div class="alert alert-warning mt-2" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                {{ nino.alergias }}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Ninguna registrada</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                {% if nino.enfermedades %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold text-danger">
+                        <i class="bi bi-bandaid"></i> Enfermedades
+                    </h6>
+                    <div class="alert alert-info">
+                        {{ nino.enfermedades }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if nino.medicamentos %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="fw-bold text-danger">
+                        <i class="bi bi-capsule"></i> Medicamentos
+                    </h6>
+                    <div class="alert alert-info">
+                        {{ nino.medicamentos }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if nino.observaciones_medicas %}
+            <div class="mt-3">
+                <h6 class="fw-bold text-danger">
+                    <i class="bi bi-clipboard-check"></i> Observaciones Médicas
+                </h6>
+                <p>{{ nino.observaciones_medicas }}</p>
+            </div>
+            {% endif %}
+            
+            {% if nino.documento_medico %}
+            <div class="mt-3">
+                <h6 class="fw-bold text-danger">
+                    <i class="bi bi-file-earmark-medical"></i> Documento Médico
+                </h6>
+                <a href="{{ nino.documento_medico.url }}" target="_blank" class="btn btn-outline-danger">
+                    <i class="bi bi-download"></i> Descargar Documento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Botones de acción -->
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'lista_ninos' %}" class="btn btn-secondary btn-lg">
+            <i class="bi bi-arrow-left"></i> Volver a la Lista
+        </a>
+        <div class="col-md-3 text-end">
+            <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-success btn-lg mb-2 w-100">
+                <i class="bi bi-person-check-fill"></i> Responsables
+            </a>
+            <a href="{% url 'editar_nino' nino.pk %}" class="btn btn-warning btn-lg mb-2 w-100">
+                <i class="bi bi-pencil-fill"></i> Editar
+            </a>
+            <a href="{% url 'eliminar_nino' nino.pk %}" class="btn btn-danger btn-lg w-100">
+                <i class="bi bi-trash-fill"></i> Eliminar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

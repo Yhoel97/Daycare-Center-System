@@ -1,0 +1,412 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ titulo }} - Guardería Infantil{% endblock %}
+
+{% block extra_css %}
+<style>
+    #canvas-firma {
+        border: 2px solid #007bff;
+        border-radius: 5px;
+        cursor: crosshair;
+        touch-action: none;
+    }
+    .canvas-container {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="fw-bold">
+                <i class="bi bi-person-check-fill text-success"></i> {{ titulo }}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'inicio' %}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_ninos' %}">Niños</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'detalle_nino' nino.pk %}">{{ nino.nombre_completo }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'lista_responsables' nino.pk %}">Responsables</a></li>
+                    <li class="breadcrumb-item active">{{ titulo }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    
+    <form method="post" enctype="multipart/form-data" id="form-responsable" novalidate>
+        {% csrf_token %}
+        
+        <!-- Información del Niño -->
+        <div class="card mb-4 bg-light">
+            <div class="card-body">
+                <h6 class="text-muted mb-2">Responsable para:</h6>
+                <h4 class="mb-0">{{ nino.nombre_completo }} ({{ nino.edad }} años)</h4>
+            </div>
+        </div>
+        
+        <!-- Datos Personales -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-person-fill"></i> Datos Personales del Responsable
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.nombre_completo.id_for_label }}" class="form-label">
+                            {{ form.nombre_completo.label }}
+                        </label>
+                        {{ form.nombre_completo }}
+                        {% if form.nombre_completo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.nombre_completo.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.identificacion.id_for_label }}" class="form-label">
+                            {{ form.identificacion.label }}
+                        </label>
+                        {{ form.identificacion }}
+                        {% if form.identificacion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.identificacion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.telefono.id_for_label }}" class="form-label">
+                            {{ form.telefono.label }}
+                        </label>
+                        {{ form.telefono }}
+                        {% if form.telefono.errors %}
+                            <div class="invalid-feedback d-block">{{ form.telefono.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">
+                            {{ form.email.label }}
+                        </label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.relacion.id_for_label }}" class="form-label">
+                            {{ form.relacion.label }}
+                        </label>
+                        {{ form.relacion }}
+                        {% if form.relacion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.relacion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <label for="{{ form.direccion.id_for_label }}" class="form-label">
+                            {{ form.direccion.label }}
+                        </label>
+                        {{ form.direccion }}
+                        {% if form.direccion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.direccion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label for="{{ form.foto.id_for_label }}" class="form-label">
+                            {{ form.foto.label }}
+                        </label>
+                        {{ form.foto }}
+                        {% if form.foto.errors %}
+                            <div class="invalid-feedback d-block">{{ form.foto.errors }}</div>
+                        {% endif %}
+                        {% if responsable.foto %}
+                            <div class="mt-2">
+                                <img src="{{ responsable.foto.url }}" alt="Foto actual" class="img-thumbnail" width="100">
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Período de Autorización -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar-range-fill"></i> Período y Horarios de Autorización
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_inicio_autorizacion.id_for_label }}" class="form-label">
+                            {{ form.fecha_inicio_autorizacion.label }}
+                        </label>
+                        {{ form.fecha_inicio_autorizacion }}
+                        {% if form.fecha_inicio_autorizacion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fecha_inicio_autorizacion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.fecha_fin_autorizacion.id_for_label }}" class="form-label">
+                            {{ form.fecha_fin_autorizacion.label }}
+                        </label>
+                        {{ form.fecha_fin_autorizacion }}
+                        <small class="form-text text-muted d-block">
+                            Dejar en blanco para autorización permanente
+                        </small>
+                        {% if form.fecha_fin_autorizacion.errors %}
+                            <div class="invalid-feedback d-block">{{ form.fecha_fin_autorizacion.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label for="{{ form.dias_autorizados.id_for_label }}" class="form-label">
+                            {{ form.dias_autorizados.label }}
+                        </label>
+                        {{ form.dias_autorizados }}
+                        <small class="form-text text-muted d-block">
+                            L=Lunes, M=Martes, X=Miércoles, J=Jueves, V=Viernes, S=Sábado, D=Domingo
+                        </small>
+                        {% if form.dias_autorizados.errors %}
+                            <div class="invalid-feedback d-block">{{ form.dias_autorizados.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">
+                            {{ form.hora_inicio.label }}
+                        </label>
+                        {{ form.hora_inicio }}
+                        {% if form.hora_inicio.errors %}
+                            <div class="invalid-feedback d-block">{{ form.hora_inicio.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="{{ form.hora_fin.id_for_label }}" class="form-label">
+                            {{ form.hora_fin.label }}
+                        </label>
+                        {{ form.hora_fin }}
+                        {% if form.hora_fin.errors %}
+                            <div class="invalid-feedback d-block">{{ form.hora_fin.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Firma Electrónica -->
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-pen-fill"></i> Firma Electrónica (Obligatoria)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="canvas-container text-center">
+                    <p class="mb-3">
+                        <strong>Firme en el recuadro usando el mouse o su dedo (en dispositivos táctiles)</strong>
+                    </p>
+                    <canvas id="canvas-firma" width="600" height="200"></canvas>
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-warning" id="btn-limpiar-firma">
+                            <i class="bi bi-eraser-fill"></i> Limpiar Firma
+                        </button>
+                    </div>
+                    {{ form.firma_electronica }}
+                    {% if form.firma_electronica.errors %}
+                        <div class="invalid-feedback d-block">{{ form.firma_electronica.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                {% if responsable.firma_electronica %}
+                <div class="mt-3">
+                    <h6>Firma Actual:</h6>
+                    <img src="{{ responsable.firma_electronica }}" alt="Firma actual" class="img-thumbnail" style="max-width: 300px;">
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Observaciones y Estado -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-12">
+                        <label for="{{ form.observaciones.id_for_label }}" class="form-label">
+                            {{ form.observaciones.label }}
+                        </label>
+                        {{ form.observaciones }}
+                        {% if form.observaciones.errors %}
+                            <div class="invalid-feedback d-block">{{ form.observaciones.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <div class="form-check">
+                            {{ form.activo }}
+                            <label class="form-check-label" for="{{ form.activo.id_for_label }}">
+                                {{ form.activo.label }}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Errores generales del formulario -->
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+        
+        <!-- Botones -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Cancelar
+            </a>
+            <button type="submit" class="btn btn-success btn-lg" id="btn-guardar">
+                <i class="bi bi-save-fill"></i> Guardar Responsable
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const canvas = document.getElementById('canvas-firma');
+    const ctx = canvas.getContext('2d');
+    const firmaInput = document.getElementById('id_firma_electronica');
+    const btnLimpiar = document.getElementById('btn-limpiar-firma');
+    const form = document.getElementById('form-responsable');
+    
+    let dibujando = false;
+    let firmado = false;
+    
+    // Configurar canvas responsive
+    function ajustarCanvas() {
+        const container = canvas.parentElement;
+        const maxWidth = Math.min(600, container.clientWidth - 40);
+        canvas.width = maxWidth;
+        canvas.height = 200;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        // Si ya había una firma cargada, restaurarla
+        if(firmaInput.value && firmaInput.value.startsWith('data:image')) {
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = firmaInput.value;
+            firmado = true;
+        }
+    }
+    
+    ajustarCanvas();
+    window.addEventListener('resize', ajustarCanvas);
+    
+    // Funciones de dibujo para mouse
+    function iniciarDibujo(e) {
+        dibujando = true;
+        firmado = true;
+        const rect = canvas.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    }
+    
+    function dibujar(e) {
+        if (!dibujando) return;
+        const rect = canvas.getBoundingClientRect();
+        ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+        ctx.stroke();
+    }
+    
+    function terminarDibujo() {
+        if (!dibujando) return;
+        dibujando = false;
+        ctx.closePath();
+        guardarFirma();
+    }
+    
+    // Funciones para touch (móviles)
+    function iniciarDibujoTouch(e) {
+        e.preventDefault();
+        dibujando = true;
+        firmado = true;
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.beginPath();
+        ctx.moveTo(touch.clientX - rect.left, touch.clientY - rect.top);
+    }
+    
+    function dibujarTouch(e) {
+        if (!dibujando) return;
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        ctx.lineTo(touch.clientX - rect.left, touch.clientY - rect.top);
+        ctx.stroke();
+    }
+    
+    function terminarDibujoTouch(e) {
+        if (!dibujando) return;
+        e.preventDefault();
+        dibujando = false;
+        ctx.closePath();
+        guardarFirma();
+    }
+    
+    // Guardar firma en base64
+    function guardarFirma() {
+        const firmaData = canvas.toDataURL('image/png');
+        firmaInput.value = firmaData;
+    }
+    
+    // Limpiar firma
+    btnLimpiar.addEventListener('click', function() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        firmaInput.value = '';
+        firmado = false;
+    });
+    
+    // Eventos mouse
+    canvas.addEventListener('mousedown', iniciarDibujo);
+    canvas.addEventListener('mousemove', dibujar);
+    canvas.addEventListener('mouseup', terminarDibujo);
+    canvas.addEventListener('mouseout', terminarDibujo);
+    
+    // Eventos touch
+    canvas.addEventListener('touchstart', iniciarDibujoTouch);
+    canvas.addEventListener('touchmove', dibujarTouch);
+    canvas.addEventListener('touchend', terminarDibujoTouch);
+    
+    // Validar firma antes de enviar
+    form.addEventListener('submit', function(e) {
+        if (!firmado && !firmaInput.value) {
+            e.preventDefault();
+            alert('Por favor, firme en el recuadro antes de guardar.');
+            canvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            canvas.style.border = '2px solid red';
+            setTimeout(() => {
+                canvas.style.border = '2px solid #007bff';
+            }, 3000);
+        }
+    });
+});
+</script>
+{% endblock %}
