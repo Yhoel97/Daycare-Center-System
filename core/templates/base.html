@@ -122,6 +122,19 @@
                                 <i class="bi bi-people-fill"></i> Niños
                             </a>
                         </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-mortarboard-fill"></i> Académico
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="{% url 'lista_aulas' %}">Aulas</a></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_maestros' %}">Maestros</a></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_secciones' %}">Secciones</a></li>
+                            </ul>
+                        </li>
+
+
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'registrar_nino' %}">
                                 <i class="bi bi-person-plus-fill"></i> Registrar

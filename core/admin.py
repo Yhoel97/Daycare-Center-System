@@ -4,6 +4,8 @@
 
 from django.contrib import admin
 from .models import Nino, ResponsableAutorizado
+from .models import Maestro, Aula, Seccion, HorarioAula, AsignacionAula
+
 
 @admin.register(Nino)
 class NinoAdmin(admin.ModelAdmin):
@@ -186,3 +188,46 @@ class ResponsableAutorizadoAdmin(admin.ModelAdmin):
         return "✓" if obj.autorizacion_vigente() else "✗"
     autorizacion_vigente.short_description = "Vigente"
     autorizacion_vigente.boolean = True
+
+
+    # ----- PBI-03 ----
+
+@admin.register(Maestro)
+class MaestroAdmin(admin.ModelAdmin):
+        list_display = ['nombre_completo', 'email', 'telefono', 'activo']
+        list_filter = ['activo']
+        search_fields = ['nombre_completo', 'email']
+
+
+@admin.register(Aula)
+class AulaAdmin(admin.ModelAdmin):
+        list_display = ['nombre', 'capacidad', 'activo']
+        list_filter = ['activo']
+
+
+@admin.register(HorarioAula)
+class HorarioAulaAdmin(admin.ModelAdmin):
+    list_display = ['seccion', 'dia', 'hora_inicio', 'hora_fin']
+    list_filter = ['seccion__aula', 'dia']
+
+class HorarioAulaInline(admin.TabularInline):
+    model = HorarioAula
+    extra = 2  # Número de formularios vacíos para horarios
+    fields = ['dia', 'hora_inicio', 'hora_fin']
+    # Opcional: valida que los horarios no se solapen (más adelante)
+
+@admin.register(Seccion)
+class SeccionAdmin(admin.ModelAdmin):
+        list_display = ['nombre', 'aula', 'maestro', 'activo']
+        list_filter = ['aula', 'maestro', 'activo']
+        search_fields = ['nombre', 'aula__nombre']
+        inlines = [HorarioAulaInline]  # ← Esto permite agregar horarios al editar una sección
+
+
+
+
+@admin.register(AsignacionAula)
+class AsignacionAulaAdmin(admin.ModelAdmin):
+        list_display = ['nino', 'seccion', 'fecha_asignacion']
+        list_filter = ['seccion__aula', 'seccion__maestro']
+        search_fields = ['nino__nombre_completo']

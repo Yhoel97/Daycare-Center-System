@@ -1,5 +1,6 @@
 from django import forms
-from .models import Nino, ResponsableAutorizado
+from .models import Nino, ResponsableAutorizado, AsignacionAula, Seccion, HorarioAula
+
 
 class NinoForm(forms.ModelForm):
     """Formulario para registrar y editar información de niños"""
@@ -251,3 +252,37 @@ class ResponsableAutorizadoForm(forms.ModelForm):
                 )
         
         return cleaned_data
+    
+    # ---- PBI 03 --- 
+
+
+class AsignarAulaForm(forms.ModelForm):
+        class Meta:
+            model = AsignacionAula
+            fields = ['seccion']
+            widgets = {
+                'seccion': forms.Select(attrs={'class': 'form-select'}),
+            }
+            labels = {
+                'seccion': 'Seleccionar Aula, Sección y Maestro',
+            }
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # Mostrar solo secciones activas, con su aula y maestro
+            self.fields['seccion'].queryset = Seccion.objects.filter(
+                activo=True,
+                aula__activo=True
+            ).select_related('aula', 'maestro').order_by('aula__nombre', 'nombre')
+
+
+
+class HorarioAulaForm(forms.ModelForm):
+    class Meta:
+        model = HorarioAula
+        fields = ['dia', 'hora_inicio', 'hora_fin']
+        widgets = {
+            'dia': forms.Select(attrs={'class': 'form-select'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+        }

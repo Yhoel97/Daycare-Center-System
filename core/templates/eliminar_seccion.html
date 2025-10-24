@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar Sección - {{ seccion }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-door-closed-fill"></i> Eliminar Sección
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-center">
+                        ¿Estás seguro de que deseas eliminar la sección <strong>"{{ seccion }}"</strong>?
+                    </p>
+                    <p class="text-muted text-center small">
+                        Esta acción no se puede deshacer. Los niños asignados a esta sección perderán su asignación académica.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'lista_secciones' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i> Eliminar Sección
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

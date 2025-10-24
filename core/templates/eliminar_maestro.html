@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar Maestro - {{ maestro.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-person-x-fill"></i> Eliminar Maestro
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-center">
+                        ¿Estás seguro de que deseas eliminar al maestro <strong>"{{ maestro.nombre_completo }}"</strong>?
+                    </p>
+                    <p class="text-muted text-center small">
+                        Esta acción no se puede deshacer. Las secciones asignadas a este maestro quedarán sin responsable.
+                    </p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="{% url 'lista_maestros' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i> Eliminar Maestro
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

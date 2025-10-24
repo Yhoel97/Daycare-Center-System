@@ -349,3 +349,85 @@ class ResponsableAutorizado(models.Model):
             dias = self.dias_autorizados.split(',')
             return [dias_dict.get(d.strip(), d) for d in dias if d.strip()]
         return []
+    
+
+    # ===== MODELOS PARA PBI 03: AULAS, MAESTROS, SECCIONES Y HORARIOS =====
+
+class Maestro(models.Model):
+    nombre_completo = models.CharField(max_length=200, verbose_name="Nombre Completo")
+    telefono = models.CharField(max_length=20, verbose_name="Teléfono")
+    email = models.EmailField(verbose_name="Email")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+
+    class Meta:
+        verbose_name = "Maestro"
+        verbose_name_plural = "Maestros"
+        ordering = ['nombre_completo']
+
+    def __str__(self):
+        return self.nombre_completo
+
+
+class Aula(models.Model):
+    nombre = models.CharField(max_length=100, verbose_name="Nombre del Aula")
+    capacidad = models.PositiveIntegerField(verbose_name="Capacidad Máxima")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+
+    class Meta:
+        verbose_name = "Aula"
+        verbose_name_plural = "Aulas"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre
+
+
+class Seccion(models.Model):
+    nombre = models.CharField(max_length=50, verbose_name="Nombre de la Sección")  # Ej: "A", "Matutina"
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE, related_name='secciones')
+    maestro = models.ForeignKey(Maestro, on_delete=models.SET_NULL, null=True, blank=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Sección"
+        verbose_name_plural = "Secciones"
+        ordering = ['aula', 'nombre']
+
+    def __str__(self):
+        return f"{self.aula.nombre} - {self.nombre}"
+
+
+class HorarioAula(models.Model):
+    DIA_SEMANA = [
+        ('LUN', 'Lunes'),
+        ('MAR', 'Martes'),
+        ('MIE', 'Miércoles'),
+        ('JUE', 'Jueves'),
+        ('VIE', 'Viernes'),
+        ('SAB', 'Sábado'),
+    ]
+    seccion = models.ForeignKey(Seccion, on_delete=models.CASCADE, related_name='horarios')
+    dia = models.CharField(max_length=3, choices=DIA_SEMANA, verbose_name="Día de la semana")
+    hora_inicio = models.TimeField(verbose_name="Hora de inicio")
+    hora_fin = models.TimeField(verbose_name="Hora de fin")
+
+    class Meta:
+        verbose_name = "Horario de Aula"
+        verbose_name_plural = "Horarios de Aula"
+        ordering = ['seccion', 'dia', 'hora_inicio']
+
+    def __str__(self):
+        return f"{self.seccion} | {self.get_dia_display()} {self.hora_inicio}-{self.hora_fin}"
+
+
+class AsignacionAula(models.Model):
+    nino = models.OneToOneField(Nino, on_delete=models.CASCADE, related_name='asignacion_aula')
+    seccion = models.ForeignKey(Seccion, on_delete=models.CASCADE)
+    fecha_asignacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Asignación de Aula"
+        verbose_name_plural = "Asignaciones de Aula"
+
+    def __str__(self):
+        return f"{self.nino.nombre_completo} → {self.seccion}"

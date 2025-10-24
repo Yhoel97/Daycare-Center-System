@@ -76,6 +76,10 @@
                     <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-success btn-lg mb-2 w-100">
                         <i class="bi bi-person-check-fill"></i> Responsables
                     </a>
+
+                    <a href="{% url 'asignar_aula' nino.pk %}" class="btn btn-info btn-lg mb-2 w-100">
+                        <i class="bi bi-building"></i> Asignar Aula/Maestro
+                    </a>
                     <a href="{% url 'editar_nino' nino.pk %}" class="btn btn-warning btn-lg mb-2 w-100">
                         <i class="bi bi-pencil-fill"></i> Editar
                     </a>
@@ -244,6 +248,44 @@
             {% endif %}
         </div>
     </div>
+
+    <!-- Asignación Académica -->
+    {% if nino.asignacion_aula %}
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-building"></i> Asignación Académica
+            </h5>
+        </div>
+        <div class="card-body">
+            <p><strong>Aula:</strong> {{ nino.asignacion_aula.seccion.aula.nombre }}</p>
+            <p><strong>Sección:</strong> {{ nino.asignacion_aula.seccion.nombre }}</p>
+            <p><strong>Maestro:</strong> 
+                {% if nino.asignacion_aula.seccion.maestro %}
+                    {{ nino.asignacion_aula.seccion.maestro.nombre_completo }}
+                {% else %}
+                    <span class="text-muted">No asignado</span>
+                {% endif %}
+            </p>
+
+            <!-- Horarios -->
+            {% if nino.asignacion_aula.seccion.horarios.exists %}
+                <h6 class="mt-3"><strong>Horario de Estudio:</strong></h6>
+                <ul class="list-group list-group-flush">
+                    {% for h in nino.asignacion_aula.seccion.horarios.all %}
+                        <li class="list-group-item">
+                            {{ h.get_dia_display }}: {{ h.hora_inicio|time:"H:i" }} - {{ h.hora_fin|time:"H:i" }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted small">No hay horarios registrados para esta sección.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+
     
     <!-- Perfil Médico -->
     <div class="card mb-4">
@@ -351,16 +393,6 @@
         <a href="{% url 'lista_ninos' %}" class="btn btn-secondary btn-lg">
             <i class="bi bi-arrow-left"></i> Volver a la Lista
         </a>
-        <div class="col-md-3 text-end">
-            <a href="{% url 'lista_responsables' nino.pk %}" class="btn btn-success btn-lg mb-2 w-100">
-                <i class="bi bi-person-check-fill"></i> Responsables
-            </a>
-            <a href="{% url 'editar_nino' nino.pk %}" class="btn btn-warning btn-lg mb-2 w-100">
-                <i class="bi bi-pencil-fill"></i> Editar
-            </a>
-            <a href="{% url 'eliminar_nino' nino.pk %}" class="btn btn-danger btn-lg w-100">
-                <i class="bi bi-trash-fill"></i> Eliminar
-            </a>
         </div>
     </div>
 </div>

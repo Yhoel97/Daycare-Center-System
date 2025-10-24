@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">{{ titulo }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Aula *</label>
+                            <select name="aula" class="form-select" required>
+                                <option value="">-- Seleccione --</option>
+                                {% for a in aulas %}
+                                <option value="{{ a.id }}" {% if seccion and seccion.aula_id == a.id %}selected{% endif %}>
+                                    {{ a.nombre }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Maestro (opcional)</label>
+                            <select name="maestro" class="form-select">
+                                <option value="">-- Sin maestro --</option>
+                                {% for m in maestros %}
+                                <option value="{{ m.id }}" {% if seccion and seccion.maestro_id == m.id %}selected{% endif %}>
+                                    {{ m.nombre_completo }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nombre de la Sección *</label>
+                            <input type="text" name="nombre" class="form-control" value="{{ seccion.nombre }}" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="activo" class="form-check-input" {% if not seccion or seccion.activo %}checked{% endif %}>
+                            <label class="form-check-label">Activo</label>
+                        </div>
+
+                        <!-- Horarios -->
+                        <h5 class="mt-4 mb-3">Horarios de Estudio en Formato 24 horas </h5>
+                        <div id="horarios-container">
+                            {% if horarios %}
+                                {% for h in horarios %}
+                                <div class="row mb-2 horario-item">
+                                    <div class="col-md-4">
+                                        <select name="horario_{{ forloop.counter0 }}_dia" class="form-select">
+                                            <option value="">-- Día --</option>
+                                            <option value="LUN" {% if h.dia == 'LUN' %}selected{% endif %}>Lunes</option>
+                                            <option value="MAR" {% if h.dia == 'MAR' %}selected{% endif %}>Martes</option>
+                                            <option value="MIE" {% if h.dia == 'MIE' %}selected{% endif %}>Miércoles</option>
+                                            <option value="JUE" {% if h.dia == 'JUE' %}selected{% endif %}>Jueves</option>
+                                            <option value="VIE" {% if h.dia == 'VIE' %}selected{% endif %}>Viernes</option>
+                                            <option value="SAB" {% if h.dia == 'SAB' %}selected{% endif %}>Sábado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" name="horario_{{ forloop.counter0 }}_inicio" class="form-control" value="{{ h.hora_inicio|time:'H:i' }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" name="horario_{{ forloop.counter0 }}_fin" class="form-control" value="{{ h.hora_fin|time:'H:i' }}">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-center">
+                                        <button type="button" class="btn btn-danger btn-sm remove-horario">✕</button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="row mb-2 horario-item">
+                                    <div class="col-md-4">
+                                        <select name="horario_0_dia" class="form-select">
+                                            <option value="">-- Día --</option>
+                                            <option value="LUN">Lunes</option>
+                                            <option value="MAR">Martes</option>
+                                            <option value="MIE">Miércoles</option>
+                                            <option value="JUE">Jueves</option>
+                                            <option value="VIE">Viernes</option>
+                                            <option value="SAB">Sábado</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" name="horario_0_inicio" class="form-control">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="time" name="horario_0_fin" class="form-control">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-center">
+                                        <button type="button" class="btn btn-danger btn-sm remove-horario">✕</button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="button" id="add-horario" class="btn btn-outline-secondary btn-sm mb-3">
+                            <i class="bi bi-plus"></i> Agregar otro horario
+                        </button>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'lista_secciones' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-info">Guardar Sección</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let horarioIndex = {% if horarios %}{{ horarios|length }}{% else %}1{% endif %};
+
+document.getElementById('add-horario').addEventListener('click', function() {
+    const container = document.getElementById('horarios-container');
+    const newRow = document.createElement('div');
+    newRow.className = 'row mb-2 horario-item';
+    newRow.innerHTML = `
+        <div class="col-md-4">
+            <select name="horario_${horarioIndex}_dia" class="form-select">
+                <option value="">-- Día --</option>
+                <option value="LUN">Lunes</option>
+                <option value="MAR">Martes</option>
+                <option value="MIE">Miércoles</option>
+                <option value="JUE">Jueves</option>
+                <option value="VIE">Viernes</option>
+                <option value="SAB">Sábado</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <input type="time" name="horario_${horarioIndex}_inicio" class="form-control">
+        </div>
+        <div class="col-md-3">
+            <input type="time" name="horario_${horarioIndex}_fin" class="form-control">
+        </div>
+        <div class="col-md-2 d-flex align-items-center">
+            <button type="button" class="btn btn-danger btn-sm remove-horario">✕</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+    horarioIndex++;
+
+    // Agregar evento al nuevo botón de eliminar
+    newRow.querySelector('.remove-horario').addEventListener('click', function() {
+        newRow.remove();
+    });
+});
+
+// Evento para eliminar horarios existentes
+document.querySelectorAll('.remove-horario').forEach(button => {
+    button.addEventListener('click', function() {
+        this.closest('.horario-item').remove();
+    });
+});
+</script>
+{% endblock %}

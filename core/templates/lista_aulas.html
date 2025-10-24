@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Aulas - Guardería{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-building"></i> Aulas</h2>
+        <a href="{% url 'crear_aula' %}" class="btn btn-primary">Crear Aula</a>
+    </div>
+    <div class="row">
+        {% for aula in aulas %}
+        <div class="col-md-4 mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ aula.nombre }}</h5>
+                    <p class="text-muted">Capacidad: {{ aula.capacidad }} niños</p>
+                    <span class="badge {% if aula.activo %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ aula.get_activo_display }}
+                    </span>
+                    <div class="mt-2">
+                        <a href="{% url 'editar_aula' aula.pk %}" class="btn btn-sm btn-warning">Editar</a>
+                        <a href="{% url 'eliminar_aula' aula.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p>No hay aulas registradas.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

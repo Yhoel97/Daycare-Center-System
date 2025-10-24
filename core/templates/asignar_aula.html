@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">{{ titulo }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.seccion.label }}</label>
+                            {{ form.seccion }}
+                            {% if form.seccion.errors %}
+                                <div class="text-danger">{{ form.seccion.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'detalle_nino' nino.pk %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Asignar Aula, Sección y Maestro</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
