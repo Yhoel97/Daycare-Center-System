@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
+from django.utils import timezone
+
 
 class Nino(models.Model):
     """Modelo para almacenar información de los niños en la guardería"""
@@ -431,3 +433,34 @@ class AsignacionAula(models.Model):
 
     def __str__(self):
         return f"{self.nino.nombre_completo} → {self.seccion}"
+    
+
+    
+class Asistencia(models.Model):
+    nino = models.ForeignKey(Nino, on_delete=models.CASCADE, related_name='asistencias')
+    fecha = models.DateField(default=timezone.now)
+    presente = models.BooleanField(default=True, verbose_name="¿Asistió?")
+    motivo_inasistencia = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Motivo de inasistencia",
+        help_text="Obligatorio si el niño no asistió"
+    )
+    registrado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        verbose_name="Registrado por"
+    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('nino', 'fecha')
+        ordering = ['-fecha']
+
+    def __str__(self):
+        estado = "Presente" if self.presente else "Ausente"
+        return f"{self.nino.nombre_completo} - {self.fecha} ({estado})"
+
+    def justificado(self):
+        return bool(self.motivo_inasistencia)

@@ -1,0 +1,224 @@
+{% extends 'base.html' %}
+{% load dict_extras %}
+
+{% block title %}Reporte de Asistencia - {{ hoy|date:"d/m/Y" }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="bi bi-calendar-check-fill"></i> Asistencia Diaria
+        </h2>
+        <span class="badge bg-info">{{ hoy|date:"l, d \d\e F \d\e Y" }}</span>
+    </div>
+
+    {% if ninos_asignados %}
+        {% regroup ninos_asignados by asignacion_aula.seccion as secciones_grouped %}
+
+        {% for seccion_group in secciones_grouped %}
+            {% with seccion=seccion_group.grouper %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        {% if seccion.aula %}
+                            <i class="bi bi-building"></i> {{ seccion.aula.nombre }}
+                        {% else %}
+                            <i class="bi bi-building"></i> Sin aula
+                        {% endif %}
+                        — 
+                        <i class="bi bi-people"></i> {{ seccion.nombre }}
+                        {% if seccion.maestro %}
+                            <small class="ms-2">(Maestro: {{ seccion.maestro.nombre_completo }})</small>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Asistió</th>
+                                    <th>Motivo (si no asistió)</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nino in seccion_group.list %}
+                                    {% with asistencia=asistencias_hoy|get_item:nino.id %}
+                                    <tr>
+                                        <td>{{ nino.nombre_completo }}</td>
+                                        <td>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input toggle-asistencia"
+                                                       type="checkbox"
+                                                       data-nino-id="{{ nino.id }}"
+                                                       id="presente_{{ nino.id }}"
+                                                       {% if asistencia.presente %}checked{% endif %}>
+                                                <label class="form-check-label" for="presente_{{ nino.id }}"></label>
+                                            </div>
+                                        </td>
+                                        <td class="motivo-cell" id="motivo-cell-{{ nino.id }}">
+                                            {% if not asistencia.presente %}
+                                                <input type="text"
+                                                       class="form-control form-control-sm motivo-input"
+                                                       placeholder="Dejar vacío si no hay justificación..."
+                                                       data-nino-id="{{ nino.id }}"
+                                                       value="{{ asistencia.motivo_inasistencia|default:'' }}">
+                                            {% else %}
+                                                <span class="text-muted">—</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-primary guardar-motivo"
+                                                    data-nino-id="{{ nino.id }}"
+                                                    {% if asistencia.presente %}disabled{% endif %}>
+                                                Guardar
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% endwith %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            No hay niños asignados a secciones.
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Cambiar UI al toggle, SIN enviar al backend
+        // Solo mostrar/ocultar el campo de motivo, SIN cambiar su valor
+        document.querySelectorAll('.toggle-asistencia').forEach(checkbox => {
+            checkbox.addEventListener('change', function () {
+                const ninoId = this.dataset.ninoId;
+                const presente = this.checked;
+                const motivoCell = document.getElementById(`motivo-cell-${ninoId}`);
+                const guardarBtn = document.querySelector(`button[data-nino-id="${ninoId}"]`);
+
+                // Siempre guardar el estado actual
+                fetch('{% url "actualizar_asistencia_ajax" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        nino_id: ninoId,
+                        presente: presente,
+                        motivo: presente ? '' : ''  // limpiar motivo si asiste
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (presente) {
+                            motivoCell.innerHTML = '<span class="text-muted">—</span>';
+                            guardarBtn.disabled = true;
+                            // Eliminar mensaje de notificación
+                            document.getElementById(`mensaje-notif-${ninoId}`)?.remove();
+                        } else {
+                            motivoCell.innerHTML = `
+                                <input type="text"
+                                    class="form-control form-control-sm motivo-input"
+                                    placeholder="Deje vacío si no hay justificación"
+                                    data-nino-id="${ninoId}"
+                                    value="${data.motivo || ''}">
+                            `;
+                            guardarBtn.disabled = false;
+                            bindEvents();
+                        }
+                    } else {
+                        alert('Error al actualizar asistencia');
+                        this.checked = !this.checked;
+                    }
+                })
+                .catch(() => {
+                    alert('Error de conexión');
+                    this.checked = !this.checked;
+                });
+            });
+        });
+
+    function bindEvents() {
+        document.querySelectorAll('.guardar-motivo').forEach(btn => {
+            if (!btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', function () {
+                    const ninoId = this.dataset.ninoId;
+                    const input = document.querySelector(`input.motivo-input[data-nino-id="${ninoId}"]`);
+                    const motivo = input ? input.value.trim() : '';
+                    const checkbox = document.querySelector(`.toggle-asistencia[data-nino-id="${ninoId}"]`);
+                    if (checkbox) checkbox.checked = false;
+
+                    fetch('{% url "actualizar_asistencia_ajax" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({
+                            nino_id: ninoId,
+                            presente: false,
+                            motivo: motivo
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            input.classList.add('is-valid');
+                            setTimeout(() => input.classList.remove('is-valid'), 1500);
+
+                            // Eliminar mensaje anterior
+                            document.getElementById(`mensaje-notif-${ninoId}`)?.remove();
+
+                            // Mostrar mensaje SOLO si se envió notificación
+                            if (data.notificacion_enviada) {
+                                const mensaje = document.createElement('div');
+                                mensaje.id = `mensaje-notif-${ninoId}`;
+                                mensaje.className = 'mt-1';
+                                mensaje.innerHTML = `
+                                    <small class="text-success">
+                                        <i class="bi bi-envelope-check"></i>
+                                        Se envió notificación al responsable de ${data.nombre_nino}.
+                                    </small>
+                                `;
+                                input.parentNode.appendChild(mensaje);
+                            }
+                        } else {
+                            alert('Error al guardar: ' + (data.error || 'Desconocido'));
+                        }
+                    })
+                    .catch(() => alert('Error de conexión'));
+                });
+            }
+        });
+
+        // Enter para guardar
+        document.querySelectorAll('.motivo-input').forEach(input => {
+            if (!input.dataset.bound) {
+                input.dataset.bound = 'true';
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        document.querySelector(`button[data-nino-id="${this.dataset.ninoId}"]`).click();
+                    }
+                });
+            }
+        });
+    }
+
+    bindEvents();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Registrar Asistencia - {{ nino.nombre_completo }}{% endblock %}
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-calendar-check-fill"></i> Asistencia de Hoy
+                    </h4>
+                    <small>{{ hoy|date:"l, d \d\e F \d\e Y" }}</small>
+                </div>
+                <div class="card-body">
+                    <h5 class="text-center mb-4">{{ nino.nombre_completo }}</h5>
+                    
+                <!-- registrar_asistencia.html -->
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3 form-check">
+                        {{ form.presente }}
+                        <label class="form-check-label" for="{{ form.presente.id_for_label }}">
+                            {{ form.presente.label }}
+                        </label>
+                    </div>
+
+                    <div class="mb-3" id="motivo-div" style="display:{% if not form.instance.presente %}block{% else %}none{% endif %};">
+                        <label class="form-label">{{ form.motivo_inasistencia.label }}</label>
+                        {{ form.motivo_inasistencia }}
+                        <small class="text-muted">Dejar en blanco si la inasistencia no está justificada (se notificará al responsable).</small>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'detalle_nino' nino.pk %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-info">
+                            <i class="bi bi-save"></i> Guardar Asistencia
+                        </button>
+                    </div>
+                </form>
+
+                <script>
+                document.getElementById('{{ form.presente.id_for_label }}').addEventListener('change', function() {
+                    document.getElementById('motivo-div').style.display = this.checked ? 'none' : 'block';
+                });
+                </script>
+
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('{{ form.presente.id_for_label }}').addEventListener('change', function() {
+    document.getElementById('motivo-div').style.display = this.checked ? 'none' : 'block';
+});
+</script>
+{% endblock %}

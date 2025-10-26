@@ -1,5 +1,5 @@
 from django import forms
-from .models import Nino, ResponsableAutorizado, AsignacionAula, Seccion, HorarioAula
+from .models import Nino, ResponsableAutorizado, AsignacionAula, Seccion, HorarioAula, Asistencia
 
 
 class NinoForm(forms.ModelForm):
@@ -68,7 +68,7 @@ class NinoForm(forms.ModelForm):
             'alergias': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 3,
-                'placeholder': 'Describa las alergias conocidas (campo obligatorio si aplica)'
+                'placeholder': 'Puede dejar el campo vacío si no tiene alergias'
             }),
             'enfermedades': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -253,27 +253,46 @@ class ResponsableAutorizadoForm(forms.ModelForm):
         
         return cleaned_data
     
-    # ---- PBI 03 --- 
 
+
+# ---- PBI 03 --- 
 
 class AsignarAulaForm(forms.ModelForm):
-        class Meta:
-            model = AsignacionAula
-            fields = ['seccion']
-            widgets = {
-                'seccion': forms.Select(attrs={'class': 'form-select'}),
-            }
-            labels = {
-                'seccion': 'Seleccionar Aula, Sección y Maestro',
-            }
+    class Meta:
+        model = AsignacionAula
+        fields = ['seccion']
+        widgets = {
+            'seccion': forms.Select(attrs={'class': 'form-select'}),
+        }
+        labels = {
+            'seccion': 'Seleccionar Aula, Sección y Maestro',
+        }
 
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            # Mostrar solo secciones activas, con su aula y maestro
-            self.fields['seccion'].queryset = Seccion.objects.filter(
-                activo=True,
-                aula__activo=True
-            ).select_related('aula', 'maestro').order_by('aula__nombre', 'nombre')
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Obtener secciones activas con sus relaciones
+        secciones = Seccion.objects.filter(
+            activo=True,
+            aula__activo=True
+        ).select_related('aula', 'maestro').order_by('aula__nombre', 'nombre')
+        
+        # Crear opciones personalizadas que incluyan el maestro
+        choices = [('', '---------')]  # Opción vacía por defecto
+        
+        for seccion in secciones:
+            # Obtener nombre del maestro
+            if seccion.maestro:
+                maestro_nombre = seccion.maestro.nombre_completo
+            else:
+                maestro_nombre = "Sin maestro asignado"
+            
+            # Formato: "Aula - Sección - Maestro: Nombre"
+            texto_opcion = f"{seccion.aula.nombre} - {seccion.nombre} - Maestro: {maestro_nombre}"
+            
+            choices.append((seccion.id, texto_opcion))
+        
+        # Asignar las opciones personalizadas al campo
+        self.fields['seccion'].choices = choices
 
 
 
@@ -286,3 +305,34 @@ class HorarioAulaForm(forms.ModelForm):
             'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
         }
+
+#ASISTENCIA EN TIEMPO REAL
+
+# forms.py
+class AsistenciaForm(forms.ModelForm):
+    class Meta:
+        model = Asistencia
+        fields = ['presente', 'motivo_inasistencia']
+        widgets = {
+            'presente': forms.CheckboxInput(attrs={'class': 'form-check-input', 'id': 'id_presente'}),
+            'motivo_inasistencia': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Opcional: Enfermedad, cita médica, etc.'
+            }),
+        }
+        labels = {
+            'presente': '¿El niño asistió hoy?',
+            'motivo_inasistencia': 'Motivo de inasistencia (opcional)',
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        presente = cleaned_data.get('presente')
+        motivo = cleaned_data.get('motivo_inasistencia')
+
+        # Si está presente, limpiar el motivo
+        if presente:
+            cleaned_data['motivo_inasistencia'] = None
+        # Si no está presente, permitir que el motivo sea vacío → inasistencia NO justificada
+        return cleaned_data

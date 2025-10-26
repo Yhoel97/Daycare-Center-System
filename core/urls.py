@@ -44,4 +44,13 @@ path('secciones/crear/', views.crear_seccion, name='crear_seccion'),
 path('secciones/<int:pk>/editar/', views.editar_seccion, name='editar_seccion'),
 path('secciones/<int:pk>/eliminar/', views.eliminar_seccion, name='eliminar_seccion'),
 
+path('ninos/<int:nino_pk>/asistencia/', views.registrar_asistencia, name='registrar_asistencia'),
+
+#REPORTE DIARIO 
+path('asistencia/reporte/', views.reporte_asistencia_diario, name='reporte_asistencia_diario'),
+
+path('ninos/<int:nino_pk>/enviar-notificacion/', views.enviar_notificacion_manual, name='enviar_notificacion_manual'),
+path('asistencia/actualizar-ajax/', views.actualizar_asistencia_ajax, name='actualizar_asistencia_ajax'),
+
+
 ]

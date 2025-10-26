@@ -3,10 +3,83 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.core.paginator import Paginator
-from .models import Nino, ResponsableAutorizado, Maestro, Aula, Seccion, HorarioAula, AsignacionAula
-from .forms import NinoForm, ResponsableAutorizadoForm, AsignarAulaForm
+from .models import Nino, ResponsableAutorizado, Maestro, Aula, Seccion, HorarioAula, AsignacionAula, Asistencia
+from .forms import NinoForm, ResponsableAutorizadoForm, AsignarAulaForm, AsistenciaForm
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
+from django.utils import timezone
+import os
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
+from django.http import HttpResponseForbidden
+from django.shortcuts import get_object_or_404, redirect
+from django.contrib import messages
+from django.utils import timezone
+from .models import Nino, Asistencia
+from .email import enviar_notificacion_inasistencia
+
+@login_required
+def actualizar_asistencia_ajax(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    if not request.content_type == 'application/json':
+        return JsonResponse({'success': False, 'error': 'Tipo de contenido debe ser JSON'}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        nino_id = data.get('nino_id')
+        presente = data.get('presente', True)
+        motivo = data.get('motivo', '').strip() if not presente else ''
+
+        if not nino_id:
+            return JsonResponse({'success': False, 'error': 'ID de niño requerido'}, status=400)
+
+        nino = get_object_or_404(Nino, pk=nino_id)
+        print(f"DEBUG: Procesando asistencia para {nino.nombre_completo}")
+        print(f"DEBUG: presente={presente}, motivo='{motivo}'")
+        print(f"DEBUG: email_responsable={nino.email_responsable}")
+
+        hoy = timezone.now().date()
+        asistencia, created = Asistencia.objects.get_or_create(
+            nino=nino,
+            fecha=hoy,
+            defaults={'registrado_por': request.user}
+        )
+
+        asistencia.presente = presente
+        if not presente:
+            asistencia.motivo_inasistencia = motivo
+        asistencia.registrado_por = request.user
+        asistencia.save()
+
+        notificacion_enviada = False
+        if not presente and not motivo:
+            if nino.email_responsable:
+                print("DEBUG: Intentando enviar notificación...")
+                from .email import enviar_notificacion_inasistencia
+                exito = enviar_notificacion_inasistencia(nino.email_responsable, nino.nombre_completo)
+                print(f"DEBUG: Resultado de envío = {exito}")
+                if exito:
+                    notificacion_enviada = True
+            else:
+                print("DEBUG: No hay email, omitiendo notificación.")
+        else:
+            print("DEBUG: Asistencia justificada o presente, no se envía notificación.")
+
+        return JsonResponse({
+            'success': True,
+            'motivo': motivo,
+            'notificacion_enviada': notificacion_enviada,
+            'nombre_nino': nino.nombre_completo
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'success': False, 'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        print(f"ERROR EN VISTA AJAX: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
 
@@ -493,3 +566,133 @@ def eliminar_aula(request, pk):
 
 
 
+@login_required
+def registrar_asistencia(request, nino_pk):
+    nino = get_object_or_404(Nino, pk=nino_pk)
+    hoy = timezone.now().date()
+
+    # Obtener o crear registro de hoy
+    asistencia, created = Asistencia.objects.get_or_create(
+        nino=nino,
+        fecha=hoy,
+        defaults={'registrado_por': request.user}
+    )
+
+    if request.method == 'POST':
+        form = AsistenciaForm(request.POST, instance=asistencia)
+        if form.is_valid():
+            asistencia = form.save(commit=False)
+            asistencia.nino = nino
+            asistencia.fecha = hoy
+            asistencia.registrado_por = request.user
+            asistencia.save()
+
+            # Dentro de registrar_asistencia, después de guardar la asistencia
+            if not asistencia.presente and not asistencia.justificado():
+                if nino.email_responsable:
+                    print(">>> Enviando notificación a:", nino.email_responsable)
+                    print(">>> BREVO_API_KEY disponible:", bool(os.getenv("BREVO_API_KEY")))
+                    from .email import enviar_notificacion_inasistencia
+                    exito = enviar_notificacion_inasistencia(nino.email_responsable, nino.nombre_completo)
+                    if exito:
+                        messages.warning(request, f"Notificación enviada al responsable de {nino.nombre_completo}.")
+                    else:
+                        messages.error(request, "No se pudo enviar la notificación. Verifique la configuración.")
+                else:
+                    messages.warning(request, f"{nino.nombre_completo} no tiene email registrado.")
+
+            return redirect('detalle_nino', pk=nino.pk)
+    else:
+        form = AsistenciaForm(instance=asistencia)
+
+    return render(request, 'registrar_asistencia.html', {
+        'form': form,
+        'nino': nino,
+        'hoy': hoy,
+    })
+
+
+
+
+# core/views.py
+
+
+
+
+
+
+
+@login_required
+def enviar_notificacion_manual(request, nino_pk):
+    if request.method != 'POST':
+        return HttpResponseForbidden()
+    
+    nino = get_object_or_404(Nino, pk=nino_pk)
+    
+    # Verificar que hoy el niño esté ausente y sin justificar
+    hoy = timezone.now().date()
+    asistencia = Asistencia.objects.filter(nino=nino, fecha=hoy).first()
+    
+    if not asistencia or asistencia.presente or asistencia.justificado():
+        messages.error(request, f"{nino.nombre_completo} no tiene una inasistencia no justificada hoy.")
+        return redirect('detalle_nino', pk=nino.pk)
+    
+    if not nino.email_responsable:
+        messages.warning(request, f"{nino.nombre_completo} no tiene email registrado.")
+        return redirect('detalle_nino', pk=nino.pk)
+    
+    # Enviar notificación
+    exito = enviar_notificacion_inasistencia(nino.email_responsable, nino.nombre_completo)
+    if exito:
+        messages.success(request, f"✅ Notificación enviada al responsable de {nino.nombre_completo}.")
+    else:
+        messages.error(request, "❌ No se pudo enviar la notificación. Verifique la configuración de Brevo.")
+    
+    return redirect('detalle_nino', pk=nino.pk)
+
+@login_required
+def reporte_asistencia_diario(request):
+    hoy = timezone.now().date()
+    if request.user.is_superuser:
+        ninos_asignados = Nino.objects.filter(
+            activo=True,
+            asignacion_aula__isnull=False
+        ).select_related('asignacion_aula__seccion__aula', 'asignacion_aula__seccion__maestro')
+    else:
+        ninos_asignados = Nino.objects.filter(
+            activo=True,
+            asignacion_aula__seccion__maestro__usuario=request.user
+        ).select_related('asignacion_aula__seccion__aula', 'asignacion_aula__seccion__maestro')
+
+    # Asegurar orden para regroup
+    ninos_asignados = ninos_asignados.order_by(
+        'asignacion_aula__seccion__aula__nombre',
+        'asignacion_aula__seccion__nombre'
+    )
+
+    asistencias_hoy = {}
+    for nino in ninos_asignados:
+        asistencia, created = Asistencia.objects.get_or_create(
+            nino=nino,
+            fecha=hoy,
+            defaults={'registrado_por': request.user}
+        )
+        asistencias_hoy[nino.id] = asistencia
+
+    # ✅ Agregar asistencias_json al contexto
+    asistencias_dict = {
+        nino.id: {
+            'presente': asistencia.presente,
+            'motivo_inasistencia': asistencia.motivo_inasistencia or ''
+        }
+        for nino in ninos_asignados
+        for asistencia in [asistencias_hoy[nino.id]]
+    }
+
+    context = {
+        'ninos_asignados': ninos_asignados,
+        'asistencias_hoy': asistencias_hoy,
+        'asistencias_json': json.dumps(asistencias_dict),
+        'hoy': hoy,
+    }
+    return render(request, 'reporte_diario.html', context)

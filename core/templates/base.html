@@ -140,6 +140,16 @@
                                 <i class="bi bi-person-plus-fill"></i> Registrar
                             </a>
                         </li>
+
+                    {% if user.is_authenticated %}
+                        <li class="nav-item">
+                                <a class="nav-link" href="{% url 'reporte_asistencia_diario' %}">
+                                    <i class="bi bi-calendar-check-fill"></i> Asistencia
+                                </a>
+                        </li>
+                    {% endif %}
+
+
                     {% endif %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'acerca_de' %}">

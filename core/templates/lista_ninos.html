@@ -52,7 +52,7 @@
                                 <th>Nombre Completo</th>
                                 <th>Edad</th>
                                 <th>Responsable</th>
-                                <th>Teléfono</th>
+                                <th>Correo</th>
                                 <th>Alergias</th>
                                 <th class="text-center">Acciones</th>
                             </tr>
@@ -83,15 +83,15 @@
                                 </td>
                                 <td>{{ nino.nombre_responsable }}</td>
                                 <td>
-                                    <i class="bi bi-telephone-fill text-muted"></i> 
-                                    {{ nino.telefono_responsable }}
+                                    <i class="bi bi-envelope-fill text-muted"></i> 
+                                    {{ nino.email_responsable }}
                                 </td>
                                 <td>
                                     {% if nino.tiene_alergias %}
                                         <span class="badge bg-warning text-dark">
                                             <i class="bi bi-exclamation-triangle-fill"></i> Sí
                                         </span>
-                                    {% else %}
+                                        {% else %}
                                         <span class="badge bg-success">
                                             <i class="bi bi-check-circle-fill"></i> No
                                         </span>
