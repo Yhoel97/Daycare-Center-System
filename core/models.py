@@ -464,3 +464,156 @@ class Asistencia(models.Model):
 
     def justificado(self):
         return bool(self.motivo_inasistencia)
+
+
+class PermisoAusencia(models.Model):
+    """Modelo para gestionar permisos de ausencia con comprobante"""
+    
+    TIPO_PERMISO = [
+        ('medico', 'Médico'),
+        ('familiar', 'Familiar'),
+        ('personal', 'Personal'),
+    ]
+    
+    ESTADO_PERMISO = [
+        ('pendiente', 'Pendiente'),
+        ('aprobado', 'Aprobado'),
+        ('rechazado', 'Rechazado'),
+    ]
+    
+    # Relación con el niño
+    nino = models.ForeignKey(
+        Nino,
+        on_delete=models.CASCADE,
+        related_name='permisos_ausencia',
+        verbose_name="Niño"
+    )
+    
+    # Tipo de permiso
+    tipo = models.CharField(
+        max_length=20,
+        choices=TIPO_PERMISO,
+        verbose_name="Tipo de Permiso"
+    )
+    
+    # Fechas
+    fecha_inicio = models.DateField(
+        verbose_name="Fecha de Inicio"
+    )
+    
+    fecha_fin = models.DateField(
+        verbose_name="Fecha de Fin",
+        null=True,
+        blank=True,
+        help_text="Dejar en blanco si es ausencia de un solo día"
+    )
+    
+    # Horarios (para ausencias parciales)
+    hora_inicio = models.TimeField(
+        verbose_name="Hora de Inicio",
+        null=True,
+        blank=True,
+        help_text="Opcional: para ausencias parciales"
+    )
+    
+    hora_fin = models.TimeField(
+        verbose_name="Hora de Fin",
+        null=True,
+        blank=True,
+        help_text="Opcional: para ausencias parciales"
+    )
+    
+    # Motivo
+    motivo = models.TextField(
+        verbose_name="Motivo de la Ausencia",
+        help_text="Describa brevemente el motivo del permiso"
+    )
+    
+    # Documento adjunto (opcional)
+    documento = models.FileField(
+        upload_to='permisos_ausencia/%Y/%m/',
+        null=True,
+        blank=True,
+        verbose_name="Documento de Comprobante",
+        help_text="Adjunte certificado médico, carta, etc. (opcional)"
+    )
+    
+    # Estado del permiso
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADO_PERMISO,
+        default='pendiente',
+        verbose_name="Estado"
+    )
+    
+    # Solicitante (padre/tutor)
+    solicitante = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='permisos_solicitados',
+        verbose_name="Solicitado por"
+    )
+    
+    # Aprobador (staff)
+    aprobado_por = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='permisos_gestionados',
+        verbose_name="Gestionado por"
+    )
+    
+    # Notas del aprobador
+    notas_gestion = models.TextField(
+        blank=True,
+        verbose_name="Notas de Gestión",
+        help_text="Comentarios del administrador"
+    )
+    
+    # Metadatos
+    fecha_solicitud = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Fecha de Solicitud"
+    )
+    
+    fecha_gestion = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Fecha de Gestión"
+    )
+    
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        verbose_name="Última Actualización"
+    )
+    
+    class Meta:
+        verbose_name = "Permiso de Ausencia"
+        verbose_name_plural = "Permisos de Ausencia"
+        ordering = ['-fecha_solicitud']
+    
+    def __str__(self):
+        return f"Permiso {self.get_tipo_display()} - {self.nino.nombre_completo} ({self.get_estado_display()})"
+    
+    def es_ausencia_parcial(self):
+        """Verifica si es una ausencia parcial (con horarios)"""
+        return bool(self.hora_inicio and self.hora_fin)
+    
+    def es_ausencia_multiple_dias(self):
+        """Verifica si es una ausencia de múltiples días"""
+        return bool(self.fecha_fin and self.fecha_fin != self.fecha_inicio)
+    
+    def periodo_ausencia(self):
+        """Retorna el período de ausencia en formato legible"""
+        if self.es_ausencia_multiple_dias():
+            return f"{self.fecha_inicio.strftime('%d/%m/%Y')} al {self.fecha_fin.strftime('%d/%m/%Y')}"
+        else:
+            return self.fecha_inicio.strftime('%d/%m/%Y')
+    
+    def horario_ausencia(self):
+        """Retorna el horario de ausencia si aplica"""
+        if self.es_ausencia_parcial():
+            return f"{self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
+        return "Todo el día"

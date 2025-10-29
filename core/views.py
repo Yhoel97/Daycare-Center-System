@@ -3,8 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import logout
 from django.contrib import messages
 from django.core.paginator import Paginator
-from .models import Nino, ResponsableAutorizado, Maestro, Aula, Seccion, HorarioAula, AsignacionAula, Asistencia
-from .forms import NinoForm, ResponsableAutorizadoForm, AsignarAulaForm, AsistenciaForm
+from .models import Nino, ResponsableAutorizado, Maestro, Aula, Seccion, HorarioAula, AsignacionAula, Asistencia, PermisoAusencia
+from .forms import NinoForm, ResponsableAutorizadoForm, AsignarAulaForm, AsistenciaForm, PermisoAusenciaForm
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 from django.utils import timezone
@@ -18,7 +18,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
 from .models import Nino, Asistencia
-from .email import enviar_notificacion_inasistencia
+from .email import enviar_notificacion_inasistencia, enviar_confirmacion_solicitud_permiso, enviar_notificacion_permiso_aprobado
 
 @login_required
 def actualizar_asistencia_ajax(request):
@@ -696,3 +696,142 @@ def reporte_asistencia_diario(request):
         'hoy': hoy,
     }
     return render(request, 'reporte_diario.html', context)
+
+
+# ========== PBI 05: PERMISOS DE AUSENCIA ==========
+
+@login_required
+def solicitar_permiso_ausencia(request, nino_pk):
+    """Vista para que padres/tutores soliciten permisos de ausencia"""
+    nino = get_object_or_404(Nino, pk=nino_pk, activo=True)
+    
+    if request.method == 'POST':
+        form = PermisoAusenciaForm(request.POST, request.FILES)
+        if form.is_valid():
+            permiso = form.save(commit=False)
+            permiso.nino = nino
+            permiso.solicitante = request.user
+            permiso.save()
+            
+            # Enviar confirmación al responsable
+            if nino.email_responsable:
+                enviar_confirmacion_solicitud_permiso(
+                    nino.email_responsable,
+                    nino.nombre_completo,
+                    permiso.fecha_inicio.strftime('%d/%m/%Y'),
+                    permiso.get_tipo_display()
+                )
+            
+            messages.success(
+                request,
+                f'Permiso de ausencia solicitado exitosamente para {nino.nombre_completo}. '
+                f'Será revisado por el personal administrativo.'
+            )
+            return redirect('detalle_nino', pk=nino.pk)
+    else:
+        form = PermisoAusenciaForm()
+    
+    context = {
+        'form': form,
+        'nino': nino,
+        'titulo': f'Solicitar Permiso de Ausencia - {nino.nombre_completo}'
+    }
+    return render(request, 'solicitar_permiso.html', context)
+
+
+@staff_member_required
+def lista_permisos_ausencia(request):
+    """Vista para que el staff vea y filtre permisos de ausencia"""
+    # Obtener filtro por estado
+    estado_filtro = request.GET.get('estado', 'pendiente')
+    
+    # Filtrar permisos según el estado
+    if estado_filtro == 'todos':
+        permisos = PermisoAusencia.objects.all()
+    else:
+        permisos = PermisoAusencia.objects.filter(estado=estado_filtro)
+    
+    # Ordenar por fecha de solicitud (más recientes primero)
+    permisos = permisos.select_related('nino', 'solicitante', 'aprobado_por').order_by('-fecha_solicitud')
+    
+    # Paginación
+    paginator = Paginator(permisos, 15)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Contar permisos por estado
+    total_pendientes = PermisoAusencia.objects.filter(estado='pendiente').count()
+    total_aprobados = PermisoAusencia.objects.filter(estado='aprobado').count()
+    total_rechazados = PermisoAusencia.objects.filter(estado='rechazado').count()
+    
+    context = {
+        'page_obj': page_obj,
+        'estado_filtro': estado_filtro,
+        'total_pendientes': total_pendientes,
+        'total_aprobados': total_aprobados,
+        'total_rechazados': total_rechazados,
+    }
+    return render(request, 'lista_permisos.html', context)
+
+
+@staff_member_required
+def gestionar_permiso_ausencia(request, pk):
+    """Vista para que el staff apruebe o rechace permisos"""
+    permiso = get_object_or_404(PermisoAusencia, pk=pk)
+    
+    if request.method == 'POST':
+        accion = request.POST.get('accion')
+        notas = request.POST.get('notas_gestion', '').strip()
+        
+        if accion in ['aprobar', 'rechazar']:
+            permiso.estado = 'aprobado' if accion == 'aprobar' else 'rechazado'
+            permiso.aprobado_por = request.user
+            permiso.fecha_gestion = timezone.now()
+            permiso.notas_gestion = notas
+            permiso.save()
+            
+            # Si se aprueba, notificar al maestro
+            if accion == 'aprobar':
+                try:
+                    # Obtener el maestro del niño
+                    asignacion = permiso.nino.asignacion_aula
+                    maestro = asignacion.seccion.maestro
+                    
+                    if maestro and maestro.email:
+                        # Formatear fechas
+                        fecha_inicio = permiso.fecha_inicio.strftime('%d/%m/%Y')
+                        fecha_fin = permiso.fecha_fin.strftime('%d/%m/%Y') if permiso.fecha_fin else None
+                        
+                        # Enviar notificación al maestro
+                        enviar_notificacion_permiso_aprobado(
+                            maestro.email,
+                            permiso.nino.nombre_completo,
+                            fecha_inicio,
+                            fecha_fin,
+                            permiso.get_tipo_display(),
+                            permiso.motivo,
+                            permiso.horario_ausencia()
+                        )
+                        messages.success(
+                            request,
+                            f'Permiso aprobado exitosamente. Se ha notificado al maestro {maestro.nombre_completo}.'
+                        )
+                    else:
+                        messages.warning(
+                            request,
+                            'Permiso aprobado, pero el niño no tiene maestro asignado o el maestro no tiene email.'
+                        )
+                except Exception as e:
+                    messages.warning(
+                        request,
+                        f'Permiso aprobado, pero no se pudo enviar la notificación al maestro: {str(e)}'
+                    )
+            else:
+                messages.success(request, 'Permiso rechazado exitosamente.')
+            
+            return redirect('lista_permisos_ausencia')
+    
+    context = {
+        'permiso': permiso,
+    }
+    return render(request, 'gestionar_permiso.html', context)

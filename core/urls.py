@@ -52,5 +52,9 @@ path('asistencia/reporte/', views.reporte_asistencia_diario, name='reporte_asist
 path('ninos/<int:nino_pk>/enviar-notificacion/', views.enviar_notificacion_manual, name='enviar_notificacion_manual'),
 path('asistencia/actualizar-ajax/', views.actualizar_asistencia_ajax, name='actualizar_asistencia_ajax'),
 
+# PBI 05: Permisos de Ausencia
+path('ninos/<int:nino_pk>/solicitar-permiso/', views.solicitar_permiso_ausencia, name='solicitar_permiso_ausencia'),
+path('permisos/', views.lista_permisos_ausencia, name='lista_permisos_ausencia'),
+path('permisos/<int:pk>/gestionar/', views.gestionar_permiso_ausencia, name='gestionar_permiso_ausencia'),
 
 ]

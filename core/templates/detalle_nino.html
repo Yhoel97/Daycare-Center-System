@@ -95,6 +95,10 @@
                         <i class="bi bi-calendar-check-fill"></i> Registrar Asistencia
                     </a>
 
+                    <a href="{% url 'solicitar_permiso_ausencia' nino.pk %}" class="btn btn-primary btn-lg mb-2 w-100">
+                        <i class="bi bi-file-earmark-medical"></i> Solicitar Permiso
+                    </a>
+
                     <a href="{% url 'asignar_aula' nino.pk %}" class="btn btn-info btn-lg mb-2 w-100">
                         <i class="bi bi-building"></i> Asignar Aula/Maestro
                     </a>
@@ -303,6 +307,71 @@
     </div>
     {% endif %}
 
+    <!-- Permisos de Ausencia Recientes -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="bi bi-file-earmark-medical"></i> Permisos de Ausencia
+            </h5>
+            <a href="{% url 'solicitar_permiso_ausencia' nino.pk %}" class="btn btn-sm btn-light">
+                <i class="bi bi-plus-circle"></i> Solicitar Permiso
+            </a>
+        </div>
+        <div class="card-body">
+            {% if nino.permisos_ausencia.exists %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Período</th>
+                                <th>Estado</th>
+                                <th>Fecha Solicitud</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for permiso in nino.permisos_ausencia.all|slice:":5" %}
+                            <tr>
+                                <td>
+                                    <span class="badge 
+                                        {% if permiso.tipo == 'medico' %}bg-info
+                                        {% elif permiso.tipo == 'familiar' %}bg-primary
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ permiso.get_tipo_display }}
+                                    </span>
+                                </td>
+                                <td><small>{{ permiso.periodo_ausencia }}</small></td>
+                                <td>
+                                    {% if permiso.estado == 'pendiente' %}
+                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                    {% elif permiso.estado == 'aprobado' %}
+                                    <span class="badge bg-success">Aprobado</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Rechazado</span>
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ permiso.fecha_solicitud|date:"d/m/Y" }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if nino.permisos_ausencia.count > 5 %}
+                <div class="text-center">
+                    <small class="text-muted">Mostrando los 5 más recientes de {{ nino.permisos_ausencia.count }} permisos</small>
+                </div>
+                {% endif %}
+            {% else %}
+                <div class="text-center py-3">
+                    <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-2">No hay permisos de ausencia registrados</p>
+                    <a href="{% url 'solicitar_permiso_ausencia' nino.pk %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Solicitar Primer Permiso
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
 
     
     <!-- Perfil Médico -->

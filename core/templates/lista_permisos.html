@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Permisos de Ausencia{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="bi bi-file-earmark-medical"></i>
+                Gestión de Permisos de Ausencia
+            </h4>
+        </div>
+        <div class="card-body">
+            <!-- Filtros y estadísticas -->
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="btn-group" role="group" aria-label="Filtros de estado">
+                        <a href="?estado=pendiente" class="btn {% if estado_filtro == 'pendiente' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                            <i class="bi bi-hourglass-split"></i> Pendientes ({{ total_pendientes }})
+                        </a>
+                        <a href="?estado=aprobado" class="btn {% if estado_filtro == 'aprobado' %}btn-success{% else %}btn-outline-success{% endif %}">
+                            <i class="bi bi-check-circle"></i> Aprobados ({{ total_aprobados }})
+                        </a>
+                        <a href="?estado=rechazado" class="btn {% if estado_filtro == 'rechazado' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                            <i class="bi bi-x-circle"></i> Rechazados ({{ total_rechazados }})
+                        </a>
+                        <a href="?estado=todos" class="btn {% if estado_filtro == 'todos' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                            <i class="bi bi-list"></i> Todos
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de permisos -->
+            {% if page_obj %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Niño/a</th>
+                            <th>Tipo</th>
+                            <th>Período</th>
+                            <th>Horario</th>
+                            <th>Solicitante</th>
+                            <th>Estado</th>
+                            <th>Fecha Solicitud</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for permiso in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ permiso.nino.nombre_completo }}</strong>
+                                {% if permiso.nino.asignacion_aula %}
+                                <br><small class="text-muted">{{ permiso.nino.asignacion_aula.seccion }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if permiso.tipo == 'medico' %}bg-info
+                                    {% elif permiso.tipo == 'familiar' %}bg-primary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ permiso.get_tipo_display }}
+                                </span>
+                            </td>
+                            <td>{{ permiso.periodo_ausencia }}</td>
+                            <td>
+                                <small>{{ permiso.horario_ausencia }}</small>
+                            </td>
+                            <td>
+                                <small>{{ permiso.solicitante.get_full_name|default:permiso.solicitante.username }}</small>
+                            </td>
+                            <td>
+                                {% if permiso.estado == 'pendiente' %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-hourglass-split"></i> Pendiente
+                                </span>
+                                {% elif permiso.estado == 'aprobado' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Aprobado
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Rechazado
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ permiso.fecha_solicitud|date:"d/m/Y H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'gestionar_permiso_ausencia' permiso.pk %}" 
+                                       class="btn btn-outline-primary" 
+                                       title="Revisar">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% if permiso.documento %}
+                                    <a href="{{ permiso.documento.url }}" 
+                                       target="_blank" 
+                                       class="btn btn-outline-secondary" 
+                                       title="Ver Documento">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1"></i>
+                                <p>No hay permisos {{ estado_filtro }} en este momento.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Navegación de permisos">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?estado={{ estado_filtro }}&page={{ page_obj.previous_page_number }}">
+                            Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?estado={{ estado_filtro }}&page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?estado={{ estado_filtro }}&page={{ page_obj.next_page_number }}">
+                            Siguiente
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info" role="alert">
+                <i class="bi bi-info-circle"></i> No hay permisos de ausencia registrados.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

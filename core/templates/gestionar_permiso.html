@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gestionar Permiso - {{ permiso.nino.nombre_completo }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header 
+                    {% if permiso.estado == 'pendiente' %}bg-warning text-dark
+                    {% elif permiso.estado == 'aprobado' %}bg-success text-white
+                    {% else %}bg-danger text-white{% endif %}">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-medical"></i>
+                        Detalle del Permiso de Ausencia
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Estado:</strong> 
+                                {% if permiso.estado == 'pendiente' %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Pendiente</span>
+                                {% elif permiso.estado == 'aprobado' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Aprobado</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Rechazado</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Fecha de Solicitud:</strong> {{ permiso.fecha_solicitud|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del Niño -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-person"></i> Información del Niño/a</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nombre:</strong> {{ permiso.nino.nombre_completo }}</p>
+                            <p><strong>Edad:</strong> {{ permiso.nino.edad }} años</p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if permiso.nino.asignacion_aula %}
+                            <p><strong>Aula:</strong> {{ permiso.nino.asignacion_aula.seccion.aula.nombre }}</p>
+                            <p><strong>Sección:</strong> {{ permiso.nino.asignacion_aula.seccion.nombre }}</p>
+                            <p><strong>Maestro:</strong> 
+                                {% if permiso.nino.asignacion_aula.seccion.maestro %}
+                                {{ permiso.nino.asignacion_aula.seccion.maestro.nombre_completo }}
+                                {% else %}
+                                <span class="text-muted">Sin maestro asignado</span>
+                                {% endif %}
+                            </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalles del Permiso -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Detalles del Permiso</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Tipo de Permiso</label>
+                            <p>
+                                <span class="badge 
+                                    {% if permiso.tipo == 'medico' %}bg-info
+                                    {% elif permiso.tipo == 'familiar' %}bg-primary
+                                    {% else %}bg-secondary{% endif %} fs-6">
+                                    {{ permiso.get_tipo_display }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Solicitante</label>
+                            <p>{{ permiso.solicitante.get_full_name|default:permiso.solicitante.username }}</p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Fecha de Inicio</label>
+                            <p><i class="bi bi-calendar-event"></i> {{ permiso.fecha_inicio|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted">Fecha de Fin</label>
+                            <p>
+                                {% if permiso.fecha_fin %}
+                                <i class="bi bi-calendar-event"></i> {{ permiso.fecha_fin|date:"d/m/Y" }}
+                                {% else %}
+                                <span class="text-muted">Ausencia de un solo día</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if permiso.hora_inicio and permiso.hora_fin %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="text-muted">Horario (Ausencia Parcial)</label>
+                            <p>
+                                <i class="bi bi-clock"></i> 
+                                {{ permiso.hora_inicio|time:"H:i" }} - {{ permiso.hora_fin|time:"H:i" }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="text-muted">Motivo</label>
+                            <div class="p-3 bg-light rounded">
+                                {{ permiso.motivo }}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if permiso.documento %}
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label class="text-muted">Comprobante Adjunto</label>
+                            <p>
+                                <a href="{{ permiso.documento.url }}" target="_blank" class="btn btn-outline-primary">
+                                    <i class="bi bi-file-earmark-arrow-down"></i> Ver Documento
+                                </a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Gestión del Permiso -->
+            {% if permiso.estado == 'aprobado' or permiso.estado == 'rechazado' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Información de Gestión</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Gestionado por:</strong> 
+                        {{ permiso.aprobado_por.get_full_name|default:permiso.aprobado_por.username }}
+                    </p>
+                    <p><strong>Fecha de Gestión:</strong> {{ permiso.fecha_gestion|date:"d/m/Y H:i" }}</p>
+                    {% if permiso.notas_gestion %}
+                    <p><strong>Notas:</strong></p>
+                    <div class="p-3 bg-light rounded">
+                        {{ permiso.notas_gestion }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Formulario de Gestión (solo para pendientes) -->
+            {% if permiso.estado == 'pendiente' %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Gestionar Permiso</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="formGestion">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label for="notas_gestion" class="form-label">Notas (opcional)</label>
+                            <textarea name="notas_gestion" 
+                                      id="notas_gestion" 
+                                      class="form-control" 
+                                      rows="3" 
+                                      placeholder="Agregar comentarios o razones de la decisión"></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'lista_permisos_ausencia' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                            <div>
+                                <button type="submit" 
+                                        name="accion" 
+                                        value="rechazar" 
+                                        class="btn btn-danger me-2"
+                                        onclick="return confirm('¿Está seguro que desea rechazar este permiso?')">
+                                    <i class="bi bi-x-circle"></i> Rechazar
+                                </button>
+                                <button type="submit" 
+                                        name="accion" 
+                                        value="aprobar" 
+                                        class="btn btn-success"
+                                        onclick="return confirm('¿Está seguro que desea aprobar este permiso? Se notificará al maestro.')">
+                                    <i class="bi bi-check-circle"></i> Aprobar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <!-- Botón volver para permisos ya gestionados -->
+            <div class="text-center">
+                <a href="{% url 'lista_permisos_ausencia' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver a la Lista
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

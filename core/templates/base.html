@@ -131,6 +131,12 @@
                                 <li><a class="dropdown-item" href="{% url 'lista_aulas' %}">Aulas</a></li>
                                 <li><a class="dropdown-item" href="{% url 'lista_maestros' %}">Maestros</a></li>
                                 <li><a class="dropdown-item" href="{% url 'lista_secciones' %}">Secciones</a></li>
+                                {% if user.is_staff %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'lista_permisos_ausencia' %}">
+                                    <i class="bi bi-file-earmark-medical"></i> Permisos de Ausencia
+                                </a></li>
+                                {% endif %}
                             </ul>
                         </li>
 

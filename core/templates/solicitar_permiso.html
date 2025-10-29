@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-file-earmark-medical"></i>
+                        Solicitar Permiso de Ausencia
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Niño/a:</strong> {{ nino.nombre_completo }}
+                        {% if nino.asignacion_aula %}
+                        | <strong>Aula:</strong> {{ nino.asignacion_aula.seccion }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <!-- Errores generales del formulario -->
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ form.non_field_errors }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Tipo de Permiso -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Detalles del Permiso</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="{{ form.tipo.id_for_label }}" class="form-label">
+                                            {{ form.tipo.label }}
+                                        </label>
+                                        {{ form.tipo }}
+                                        {% if form.tipo.errors %}
+                                        <div class="text-danger small mt-1">{{ form.tipo.errors }}</div>
+                                        {% endif %}
+                                        {% if form.tipo.help_text %}
+                                        <div class="form-text">{{ form.tipo.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-12 mb-3">
+                                        <label for="{{ form.motivo.id_for_label }}" class="form-label">
+                                            {{ form.motivo.label }}
+                                        </label>
+                                        {{ form.motivo }}
+                                        {% if form.motivo.errors %}
+                                        <div class="text-danger small mt-1">{{ form.motivo.errors }}</div>
+                                        {% endif %}
+                                        {% if form.motivo.help_text %}
+                                        <div class="form-text">{{ form.motivo.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fechas -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-calendar-range"></i> Período de Ausencia</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.fecha_inicio.id_for_label }}" class="form-label">
+                                            {{ form.fecha_inicio.label }}
+                                        </label>
+                                        {{ form.fecha_inicio }}
+                                        {% if form.fecha_inicio.errors %}
+                                        <div class="text-danger small mt-1">{{ form.fecha_inicio.errors }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.fecha_fin.id_for_label }}" class="form-label">
+                                            {{ form.fecha_fin.label }}
+                                        </label>
+                                        {{ form.fecha_fin }}
+                                        {% if form.fecha_fin.errors %}
+                                        <div class="text-danger small mt-1">{{ form.fecha_fin.errors }}</div>
+                                        {% endif %}
+                                        {% if form.fecha_fin.help_text %}
+                                        <div class="form-text">{{ form.fecha_fin.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Horarios (Opcional) -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-clock"></i> Horario (Ausencia Parcial - Opcional)</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-secondary" role="alert">
+                                    <small><i class="bi bi-lightbulb"></i> Complete estos campos solo si la ausencia es parcial (por ejemplo, salida temprana o llegada tarde).</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.hora_inicio.id_for_label }}" class="form-label">
+                                            {{ form.hora_inicio.label }}
+                                        </label>
+                                        {{ form.hora_inicio }}
+                                        {% if form.hora_inicio.errors %}
+                                        <div class="text-danger small mt-1">{{ form.hora_inicio.errors }}</div>
+                                        {% endif %}
+                                        {% if form.hora_inicio.help_text %}
+                                        <div class="form-text">{{ form.hora_inicio.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.hora_fin.id_for_label }}" class="form-label">
+                                            {{ form.hora_fin.label }}
+                                        </label>
+                                        {{ form.hora_fin }}
+                                        {% if form.hora_fin.errors %}
+                                        <div class="text-danger small mt-1">{{ form.hora_fin.errors }}</div>
+                                        {% endif %}
+                                        {% if form.hora_fin.help_text %}
+                                        <div class="form-text">{{ form.hora_fin.help_text }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documento -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-file-earmark-arrow-up"></i> Comprobante</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="{{ form.documento.id_for_label }}" class="form-label">
+                                        {{ form.documento.label }}
+                                    </label>
+                                    {{ form.documento }}
+                                    {% if form.documento.errors %}
+                                    <div class="text-danger small mt-1">{{ form.documento.errors }}</div>
+                                    {% endif %}
+                                    {% if form.documento.help_text %}
+                                    <div class="form-text">{{ form.documento.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'detalle_nino' nino.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Enviar Solicitud
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

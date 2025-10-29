@@ -1,5 +1,5 @@
 from django import forms
-from .models import Nino, ResponsableAutorizado, AsignacionAula, Seccion, HorarioAula, Asistencia
+from .models import Nino, ResponsableAutorizado, AsignacionAula, Seccion, HorarioAula, Asistencia, PermisoAusencia
 
 
 class NinoForm(forms.ModelForm):
@@ -306,7 +306,7 @@ class HorarioAulaForm(forms.ModelForm):
             'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
         }
 
-#ASISTENCIA EN TIEMPO REAL
+# ASISTENCIA EN TIEMPO REAL
 
 # forms.py
 class AsistenciaForm(forms.ModelForm):
@@ -335,4 +335,98 @@ class AsistenciaForm(forms.ModelForm):
         if presente:
             cleaned_data['motivo_inasistencia'] = None
         # Si no está presente, permitir que el motivo sea vacío → inasistencia NO justificada
+        return cleaned_data
+
+
+# ---- PBI 05: PERMISOS DE AUSENCIA ----
+
+class PermisoAusenciaForm(forms.ModelForm):
+    """Formulario para solicitar permisos de ausencia"""
+    
+    class Meta:
+        model = PermisoAusencia
+        fields = [
+            'tipo', 'fecha_inicio', 'fecha_fin',
+            'hora_inicio', 'hora_fin',
+            'motivo', 'documento'
+        ]
+        
+        widgets = {
+            'tipo': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'fecha_inicio': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'required': True
+            }),
+            'fecha_fin': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'hora_inicio': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'hora_fin': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time'
+            }),
+            'motivo': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Describa brevemente el motivo del permiso de ausencia',
+                'required': True
+            }),
+            'documento': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.jpg,.jpeg,.png,.doc,.docx'
+            })
+        }
+        
+        labels = {
+            'tipo': 'Tipo de Permiso *',
+            'fecha_inicio': 'Fecha de Inicio *',
+            'fecha_fin': 'Fecha de Fin (opcional)',
+            'hora_inicio': 'Hora de Inicio (opcional)',
+            'hora_fin': 'Hora de Fin (opcional)',
+            'motivo': 'Motivo de la Ausencia *',
+            'documento': 'Comprobante (opcional)'
+        }
+        
+        help_texts = {
+            'fecha_fin': 'Dejar en blanco si es ausencia de un solo día',
+            'hora_inicio': 'Solo para ausencias parciales',
+            'hora_fin': 'Solo para ausencias parciales',
+            'documento': 'Adjunte certificado médico, carta, etc. (formatos: PDF, JPG, PNG, DOC, DOCX)'
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        fecha_inicio = cleaned_data.get('fecha_inicio')
+        fecha_fin = cleaned_data.get('fecha_fin')
+        hora_inicio = cleaned_data.get('hora_inicio')
+        hora_fin = cleaned_data.get('hora_fin')
+        
+        # Validar que la fecha de fin sea posterior o igual a la de inicio
+        if fecha_inicio and fecha_fin:
+            if fecha_fin < fecha_inicio:
+                raise forms.ValidationError(
+                    'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
+                )
+        
+        # Validar horarios si ambos están presentes
+        if hora_inicio and hora_fin:
+            if hora_fin <= hora_inicio:
+                raise forms.ValidationError(
+                    'La hora de fin debe ser posterior a la hora de inicio.'
+                )
+        
+        # Validar que si se proporciona una hora, se proporcione la otra
+        if (hora_inicio and not hora_fin) or (hora_fin and not hora_inicio):
+            raise forms.ValidationError(
+                'Debe proporcionar tanto la hora de inicio como la hora de fin para ausencias parciales.'
+            )
+        
         return cleaned_data

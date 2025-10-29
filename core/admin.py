@@ -4,7 +4,7 @@
 
 from django.contrib import admin
 from .models import Nino, ResponsableAutorizado
-from .models import Maestro, Aula, Seccion, HorarioAula, AsignacionAula
+from .models import Maestro, Aula, Seccion, HorarioAula, AsignacionAula, PermisoAusencia
 
 
 @admin.register(Nino)
@@ -231,3 +231,82 @@ class AsignacionAulaAdmin(admin.ModelAdmin):
         list_display = ['nino', 'seccion', 'fecha_asignacion']
         list_filter = ['seccion__aula', 'seccion__maestro']
         search_fields = ['nino__nombre_completo']
+
+
+# ----- PBI-05: PERMISOS DE AUSENCIA -----
+
+@admin.register(PermisoAusencia)
+class PermisoAusenciaAdmin(admin.ModelAdmin):
+    """Configuración del panel de administración para Permisos de Ausencia"""
+    
+    list_display = [
+        'nino',
+        'tipo',
+        'fecha_inicio',
+        'fecha_fin',
+        'estado',
+        'solicitante',
+        'fecha_solicitud',
+        'aprobado_por'
+    ]
+    
+    list_filter = [
+        'estado',
+        'tipo',
+        'fecha_inicio',
+        'fecha_solicitud'
+    ]
+    
+    search_fields = [
+        'nino__nombre_completo',
+        'motivo',
+        'solicitante__username',
+        'solicitante__first_name',
+        'solicitante__last_name'
+    ]
+    
+    readonly_fields = [
+        'fecha_solicitud',
+        'fecha_gestion',
+        'fecha_actualizacion',
+        'solicitante'
+    ]
+    
+    fieldsets = (
+        ('Información del Niño', {
+            'fields': ('nino',)
+        }),
+        ('Detalles del Permiso', {
+            'fields': (
+                'tipo',
+                'fecha_inicio',
+                'fecha_fin',
+                'hora_inicio',
+                'hora_fin',
+                'motivo',
+                'documento'
+            )
+        }),
+        ('Estado y Gestión', {
+            'fields': (
+                'estado',
+                'notas_gestion',
+                'aprobado_por'
+            )
+        }),
+        ('Metadatos', {
+            'fields': (
+                'solicitante',
+                'fecha_solicitud',
+                'fecha_gestion',
+                'fecha_actualizacion'
+            ),
+            'classes': ('collapse',)
+        })
+    )
+    
+    def save_model(self, request, obj, form, change):
+        """Guarda el usuario que solicita el permiso si es nuevo"""
+        if not change:
+            obj.solicitante = request.user
+        super().save_model(request, obj, form, change)
