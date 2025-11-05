@@ -1,72 +1,95 @@
 {% extends 'base.html' %}
-{% block title %}Maestros - Guardería Infantil{% endblock %}
+
+{% block title %}Lista de Maestros - Guardería{% endblock %}
 
 {% block content %}
-<div class="container my-5">
-    <!-- Encabezado -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>
-            <i class="bi bi-person-badge-fill text-success"></i> Maestros
-        </h2>
-        <a href="{% url 'crear_maestro' %}" class="btn btn-success">
-            <i class="bi bi-person-plus-fill"></i> Crear Maestro
-        </a>
-    </div>
+<div class="container py-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-person-video3"></i> Lista de Maestros
+                </h1>
+                
+                <!-- Solo Admin puede crear maestros -->
+                {% if puede_editar %}
+                    <a href="{% url 'crear_maestro' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle-fill"></i> Crear Maestro
+                    </a>
+                {% endif %}
+            </div>
 
-    <!-- Búsqueda -->
-    <div class="mb-4">
-        <form method="get" class="d-flex">
-            <input type="text" name="q" class="form-control me-2" placeholder="Buscar maestro por nombre..." value="{{ request.GET.q }}">
-            <button type="submit" class="btn btn-outline-primary">
-                <i class="bi bi-search"></i> Buscar
-            </button>
-        </form>
-    </div>
+            <!-- Mensaje informativo para maestros -->
+            {% if user.groups.all.0.name == 'Maestro' %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i> 
+                    Estás viendo la información en modo solo lectura.
+                </div>
+            {% endif %}
 
-    <!-- Lista de Maestros -->
-    {% if maestros %}
-        <div class="row">
-            {% for maestro in maestros %}
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card h-100 {% if maestro.activo %}border-success{% else %}border-secondary{% endif %}">
-                    <div class="card-body d-flex flex-column">
-                        <h5 class="card-title">
-                            {{ maestro.nombre_completo }}
-                            {% if maestro.activo %}
-                                <span class="badge bg-success float-end">Activo</span>
-                            {% else %}
-                                <span class="badge bg-secondary float-end">Inactivo</span>
-                            {% endif %}
-                        </h5>
-                        <p class="text-muted small mb-2">
-                            <i class="bi bi-envelope"></i> {{ maestro.email|default:"Sin email" }}
-                        </p>
-                        <p class="text-muted small mb-2">
-                            <i class="bi bi-telephone"></i> {{ maestro.telefono|default:"Sin teléfono" }}
-                        </p>
-                        <p class="text-muted small mb-3">
-                            <i class="bi bi-person-circle"></i> Usuario: {{ maestro.usuario.username }}
-                        </p>
-
-                        <div class="mt-auto">
-                            <a href="{% url 'editar_maestro' maestro.pk %}" class="btn btn-sm btn-warning me-2">
-                                <i class="bi bi-pencil-fill"></i> Editar
-                            </a>
-                            <a href="{% url 'eliminar_maestro' maestro.pk %}" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash-fill"></i> Eliminar
-                            </a>
+            <div class="card">
+                <div class="card-body">
+                    {% if maestros %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th>Estado</th>
+                                        {% if puede_editar %}
+                                            <th>Acciones</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for maestro in maestros %}
+                                    <tr>
+                                        <td><strong>{{ maestro.nombre_completo }}</strong></td>
+                                        <td>
+                                            <a href="mailto:{{ maestro.email }}">
+                                                {{ maestro.email }}
+                                            </a>
+                                        </td>
+                                        <td>{{ maestro.telefono }}</td>
+                                        <td>
+                                            {% if maestro.activo %}
+                                                <span class="badge bg-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if puede_editar %}
+                                                <a href="{% url 'editar_maestro' maestro.pk %}" 
+                                                   class="btn btn-sm btn-warning" 
+                                                   title="Editar">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </a>
+                                                <a href="{% url 'eliminar_maestro' maestro.pk %}" 
+                                                   class="btn btn-sm btn-danger" 
+                                                   title="Eliminar">
+                                                    <i class="bi bi-trash-fill"></i>
+                                                </a>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            No hay maestros registrados todavía.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
-            {% endfor %}
         </div>
-    {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
-            <h4 class="mt-3 text-muted">No hay maestros registrados</h4>
-            <p class="text-muted">Puedes crear uno nuevo haciendo clic en el botón de arriba.</p>
-        </div>
-    {% endif %}
+    </div>
 </div>
 {% endblock %}

@@ -310,3 +310,27 @@ class PermisoAusenciaAdmin(admin.ModelAdmin):
         if not change:
             obj.solicitante = request.user
         super().save_model(request, obj, form, change)
+
+
+# Agrega esto al final de core/admin.py
+
+from .models import PadreNino
+
+@admin.register(PadreNino)
+class PadreNinoAdmin(admin.ModelAdmin):
+    """Administración de relaciones Padre-Niño"""
+    
+    list_display = ['padre_nombre', 'nino', 'fecha_registro']
+    list_filter = ['fecha_registro']
+    search_fields = [
+        'padre__username',
+        'padre__first_name',
+        'padre__last_name',
+        'nino__nombre_completo'
+    ]
+    
+    autocomplete_fields = ['padre', 'nino']
+    
+    def padre_nombre(self, obj):
+        return obj.padre.get_full_name() or obj.padre.username
+    padre_nombre.short_description = "Padre/Tutor"

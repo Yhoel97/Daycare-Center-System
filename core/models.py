@@ -617,3 +617,29 @@ class PermisoAusencia(models.Model):
         if self.es_ausencia_parcial():
             return f"{self.hora_inicio.strftime('%H:%M')} - {self.hora_fin.strftime('%H:%M')}"
         return "Todo el día"
+    
+
+    
+class PadreNino(models.Model):
+    """Relación entre usuarios padre/tutor y sus niños"""
+    padre = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='ninos_a_cargo',
+        verbose_name="Padre/Tutor"
+    )
+    nino = models.ForeignKey(
+        Nino,
+        on_delete=models.CASCADE,
+        related_name='padres',
+        verbose_name="Niño"
+    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Relación Padre-Niño"
+        verbose_name_plural = "Relaciones Padre-Niño"
+        unique_together = ('padre', 'nino')
+    
+    def __str__(self):
+        return f"{self.padre.get_full_name() or self.padre.username} -> {self.nino.nombre_completo}"

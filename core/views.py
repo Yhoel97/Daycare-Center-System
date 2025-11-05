@@ -20,6 +20,14 @@ from django.utils import timezone
 from .models import Nino, Asistencia
 from .email import enviar_notificacion_inasistencia, enviar_confirmacion_solicitud_permiso, enviar_notificacion_permiso_aprobado
 
+# ========== IMPORTAR UTILIDADES DE ROLES ==========
+from core.utils import (
+    es_admin, es_maestro, es_padre, 
+    obtener_rol, puede_editar_nino, 
+    obtener_ninos_permitidos
+)
+
+
 @login_required
 def actualizar_asistencia_ajax(request):
     if request.method != 'POST':
@@ -82,7 +90,6 @@ def actualizar_asistencia_ajax(request):
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
 
-
 def cerrar_sesion(request):
     """Vista personalizada para cerrar sesión"""
     logout(request)
@@ -100,21 +107,25 @@ def acerca_de(request):
 def contacto(request):
     """Vista de la página de Contacto"""
     if request.method == 'POST':
-        # Aquí podrías procesar el formulario de contacto
         nombre = request.POST.get('nombre')
         email = request.POST.get('email')
         mensaje = request.POST.get('mensaje')
         
-        # Por ahora solo mostramos un mensaje de éxito
         messages.success(request, '¡Gracias por contactarnos! Responderemos pronto.')
         return redirect('contacto')
     
     return render(request, 'contacto.html')
 
+
+# ==========================================
+# VISTAS DE NIÑOS CON CONTROL DE ROLES
+# ==========================================
+
 @login_required
 def lista_ninos(request):
-    """Vista para listar todos los niños registrados"""
-    ninos_list = Nino.objects.filter(activo=True).order_by('-fecha_registro')
+    """Vista para listar niños según el rol del usuario"""
+    # Obtener niños permitidos según rol
+    ninos_list = obtener_ninos_permitidos(request.user).order_by('-fecha_registro')
     
     # Búsqueda
     query = request.GET.get('q')
@@ -122,29 +133,48 @@ def lista_ninos(request):
         ninos_list = ninos_list.filter(nombre_completo__icontains=query)
     
     # Paginación
-    paginator = Paginator(ninos_list, 10)  # 10 niños por página
+    paginator = Paginator(ninos_list, 10)
     page_number = request.GET.get('page')
     ninos = paginator.get_page(page_number)
     
     context = {
         'ninos': ninos,
-        'query': query
+        'query': query,
+        'puede_registrar': puede_editar_nino(request.user),
+        'rol': obtener_rol(request.user)
     }
     return render(request, 'lista_ninos.html', context)
 
+
 @login_required
 def detalle_nino(request, pk):
-    """Vista para ver el detalle completo de un niño"""
+    """Vista para ver el detalle de un niño (con control de acceso)"""
     nino = get_object_or_404(Nino, pk=pk)
     
+    # Verificar que el usuario tenga permiso para ver este niño
+    ninos_permitidos = obtener_ninos_permitidos(request.user)
+    if not ninos_permitidos.filter(pk=pk).exists():
+        messages.error(request, 'No tienes permiso para ver este niño.')
+        return redirect('lista_ninos')
+    
     context = {
-        'nino': nino
+        'nino': nino,
+        'puede_editar': puede_editar_nino(request.user),
+        'puede_agregar_responsable': es_admin(request.user) or es_padre(request.user),
+        'puede_asignar_aula': es_admin(request.user),
+        'puede_solicitar_permiso': es_padre(request.user),
+        'rol': obtener_rol(request.user)
     }
     return render(request, 'detalle_nino.html', context)
 
+
 @login_required
 def registrar_nino(request):
-    """Vista para registrar un nuevo niño"""
+    """Vista para registrar un nuevo niño (solo admin)"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para registrar niños.')
+        return redirect('lista_ninos')
+    
     if request.method == 'POST':
         form = NinoForm(request.POST, request.FILES)
         if form.is_valid():
@@ -164,9 +194,14 @@ def registrar_nino(request):
     }
     return render(request, 'form_nino.html', context)
 
+
 @login_required
 def editar_nino(request, pk):
-    """Vista para editar información de un niño existente"""
+    """Vista para editar información de un niño (solo admin)"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para editar niños.')
+        return redirect('detalle_nino', pk=pk)
+    
     nino = get_object_or_404(Nino, pk=pk)
     
     if request.method == 'POST':
@@ -187,13 +222,17 @@ def editar_nino(request, pk):
     }
     return render(request, 'form_nino.html', context)
 
+
 @login_required
 def eliminar_nino(request, pk):
-    """Vista para eliminar (desactivar) un niño"""
+    """Vista para eliminar un niño (solo admin)"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para eliminar niños.')
+        return redirect('lista_ninos')
+    
     nino = get_object_or_404(Nino, pk=pk)
     
     if request.method == 'POST':
-        # En lugar de eliminar, lo desactivamos
         nino.activo = False
         nino.save()
         messages.success(request, f'{nino.nombre_completo} ha sido dado de baja.')
@@ -205,9 +244,17 @@ def eliminar_nino(request, pk):
     return render(request, 'eliminar_nino.html', context)
 
 
-# Bloque de Aulas
+# ==========================================
+# VISTAS DE AULAS (CON CONTROL DE ACCESO)
+# ==========================================
+
 @login_required
 def asignar_aula(request, nino_pk):
+    """Solo admin puede asignar aulas"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para asignar aulas.')
+        return redirect('detalle_nino', pk=nino_pk)
+    
     nino = get_object_or_404(Nino, pk=nino_pk)
     asignacion = getattr(nino, 'asignacion_aula', None)
 
@@ -230,15 +277,25 @@ def asignar_aula(request, nino_pk):
         'titulo': f'Asignar Aula y Maestro a {nino.nombre_completo}'
     })
 
-# ===== VISTAS PARA AULAS =====
 
 @login_required
 def lista_aulas(request):
+    """Todos pueden ver aulas"""
     aulas = Aula.objects.all().order_by('nombre')
-    return render(request, 'lista_aulas.html', {'aulas': aulas})
+    context = {
+        'aulas': aulas,
+        'puede_editar': es_admin(request.user)
+    }
+    return render(request, 'lista_aulas.html', context)
+
 
 @login_required
 def crear_aula(request):
+    """Solo admin puede crear aulas"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para crear aulas.')
+        return redirect('lista_aulas')
+    
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         capacidad = request.POST.get('capacidad')
@@ -249,8 +306,14 @@ def crear_aula(request):
             return redirect('lista_aulas')
     return render(request, 'form_aula.html', {'titulo': 'Crear Aula'})
 
+
 @login_required
 def editar_aula(request, pk):
+    """Solo admin puede editar aulas"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para editar aulas.')
+        return redirect('lista_aulas')
+    
     aula = get_object_or_404(Aula, pk=pk)
     if request.method == 'POST':
         aula.nombre = request.POST.get('nombre')
@@ -261,8 +324,14 @@ def editar_aula(request, pk):
         return redirect('lista_aulas')
     return render(request, 'form_aula.html', {'aula': aula, 'titulo': 'Editar Aula'})
 
+
 @login_required
 def eliminar_aula(request, pk):
+    """Solo admin puede eliminar aulas"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para eliminar aulas.')
+        return redirect('lista_aulas')
+    
     aula = get_object_or_404(Aula, pk=pk)
     if request.method == 'POST':
         aula.delete()
@@ -271,15 +340,28 @@ def eliminar_aula(request, pk):
     return render(request, 'eliminar_aula.html', {'aula': aula})
 
 
-# ===== VISTAS PARA MAESTROS =====
+# ==========================================
+# VISTAS DE MAESTROS (CON CONTROL DE ACCESO)
+# ==========================================
 
-@staff_member_required
+@login_required
 def lista_maestros(request):
+    """Todos pueden ver maestros"""
     maestros = Maestro.objects.all().order_by('nombre_completo')
-    return render(request, 'lista_maestros.html', {'maestros': maestros})
+    context = {
+        'maestros': maestros,
+        'puede_editar': es_admin(request.user)
+    }
+    return render(request, 'lista_maestros.html', context)
 
-@staff_member_required
+
+@login_required
 def crear_maestro(request):
+    """Solo admin puede crear maestros"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para crear maestros.')
+        return redirect('lista_maestros')
+    
     if request.method == 'POST':
         nombre = request.POST.get('nombre_completo')
         telefono = request.POST.get('telefono')
@@ -298,8 +380,14 @@ def crear_maestro(request):
         'titulo': 'Crear Maestro'
     })
 
-@staff_member_required
+
+@login_required
 def editar_maestro(request, pk):
+    """Solo admin puede editar maestros"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para editar maestros.')
+        return redirect('lista_maestros')
+    
     maestro = get_object_or_404(Maestro, pk=pk)
     if request.method == 'POST':
         maestro.nombre_completo = request.POST.get('nombre_completo')
@@ -314,8 +402,14 @@ def editar_maestro(request, pk):
         'titulo': 'Editar Maestro'
     })
 
-@staff_member_required
+
+@login_required
 def eliminar_maestro(request, pk):
+    """Solo admin puede eliminar maestros"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para eliminar maestros.')
+        return redirect('lista_maestros')
+    
     maestro = get_object_or_404(Maestro, pk=pk)
     if request.method == 'POST':
         maestro.delete()
@@ -324,15 +418,28 @@ def eliminar_maestro(request, pk):
     return render(request, 'eliminar_maestro.html', {'maestro': maestro})
 
 
-# ===== VISTAS PARA SECCIONES =====
+# ==========================================
+# VISTAS DE SECCIONES (CON CONTROL DE ACCESO)
+# ==========================================
 
-@staff_member_required
+@login_required
 def lista_secciones(request):
+    """Todos pueden ver secciones"""
     secciones = Seccion.objects.select_related('aula', 'maestro').all().order_by('aula__nombre', 'nombre')
-    return render(request, 'lista_secciones.html', {'secciones': secciones})
+    context = {
+        'secciones': secciones,
+        'puede_editar': es_admin(request.user)
+    }
+    return render(request, 'lista_secciones.html', context)
+
 
 @login_required
 def crear_seccion(request):
+    """Solo admin puede crear secciones"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para crear secciones.')
+        return redirect('lista_secciones')
+    
     if request.method == 'POST':
         aula_id = request.POST.get('aula')
         maestro_id = request.POST.get('maestro') or None
@@ -371,8 +478,14 @@ def crear_seccion(request):
         'titulo': 'Crear Sección'
     })
 
+
 @login_required
 def editar_seccion(request, pk):
+    """Solo admin puede editar secciones"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para editar secciones.')
+        return redirect('lista_secciones')
+    
     seccion = get_object_or_404(Seccion, pk=pk)
     if request.method == 'POST':
         seccion.aula_id = request.POST.get('aula')
@@ -402,7 +515,6 @@ def editar_seccion(request, pk):
         return redirect('lista_secciones')
     aulas = Aula.objects.filter(activo=True)
     maestros = Maestro.objects.filter(activo=True)
-    # Cargar horarios existentes para el template
     horarios = seccion.horarios.all()
     return render(request, 'form_seccion.html', {
         'seccion': seccion,
@@ -412,8 +524,14 @@ def editar_seccion(request, pk):
         'titulo': 'Editar Sección'
     })
 
-@staff_member_required
+
+@login_required
 def eliminar_seccion(request, pk):
+    """Solo admin puede eliminar secciones"""
+    if not es_admin(request.user):
+        messages.error(request, 'No tienes permiso para eliminar secciones.')
+        return redirect('lista_secciones')
+    
     seccion = get_object_or_404(Seccion, pk=pk)
     if request.method == 'POST':
         seccion.delete()
@@ -423,25 +541,46 @@ def eliminar_seccion(request, pk):
 
 
 # ==========================================
-# VISTAS PARA RESPONSABLES AUTORIZADOS
+# VISTAS DE RESPONSABLES (CON CONTROL DE ACCESO)
 # ==========================================
 
 @login_required
 def lista_responsables(request, nino_pk):
-    """Vista para listar todos los responsables de un niño"""
+    """Vista para listar responsables (con control de acceso)"""
     nino = get_object_or_404(Nino, pk=nino_pk)
+    
+    # Verificar acceso
+    ninos_permitidos = obtener_ninos_permitidos(request.user)
+    if not ninos_permitidos.filter(pk=nino_pk).exists():
+        messages.error(request, 'No tienes permiso para ver esta información.')
+        return redirect('lista_ninos')
+    
     responsables = ResponsableAutorizado.objects.filter(nino=nino).order_by('-activo', 'nombre_completo')
     
     context = {
         'nino': nino,
-        'responsables': responsables
+        'responsables': responsables,
+        'puede_agregar': es_admin(request.user) or es_padre(request.user)
     }
     return render(request, 'lista_responsables.html', context)
 
+
 @login_required
 def registrar_responsable(request, nino_pk):
-    """Vista para registrar un nuevo responsable autorizado"""
+    """Vista para registrar responsable (admin o padre)"""
     nino = get_object_or_404(Nino, pk=nino_pk)
+    
+    # Verificar permisos
+    if not (es_admin(request.user) or es_padre(request.user)):
+        messages.error(request, 'No tienes permiso para agregar responsables.')
+        return redirect('lista_ninos')
+    
+    # Verificar que el padre solo pueda agregar a sus hijos
+    if es_padre(request.user):
+        ninos_permitidos = obtener_ninos_permitidos(request.user)
+        if not ninos_permitidos.filter(pk=nino_pk).exists():
+            messages.error(request, 'No tienes permiso para agregar responsables a este niño.')
+            return redirect('lista_ninos')
     
     if request.method == 'POST':
         form = ResponsableAutorizadoForm(request.POST, request.FILES)
@@ -467,10 +606,17 @@ def registrar_responsable(request, nino_pk):
     }
     return render(request, 'form_responsable.html', context)
 
+
 @login_required
 def detalle_responsable(request, pk):
     """Vista para ver el detalle de un responsable"""
     responsable = get_object_or_404(ResponsableAutorizado, pk=pk)
+    
+    # Verificar acceso
+    ninos_permitidos = obtener_ninos_permitidos(request.user)
+    if not ninos_permitidos.filter(pk=responsable.nino.pk).exists():
+        messages.error(request, 'No tienes permiso para ver esta información.')
+        return redirect('lista_ninos')
     
     context = {
         'responsable': responsable,
@@ -478,10 +624,22 @@ def detalle_responsable(request, pk):
     }
     return render(request, 'detalle_responsable.html', context)
 
+
 @login_required
 def editar_responsable(request, pk):
     """Vista para editar un responsable autorizado"""
     responsable = get_object_or_404(ResponsableAutorizado, pk=pk)
+    
+    # Verificar permisos
+    if not (es_admin(request.user) or es_padre(request.user)):
+        messages.error(request, 'No tienes permiso para editar responsables.')
+        return redirect('detalle_responsable', pk=pk)
+    
+    # Verificar acceso al niño
+    ninos_permitidos = obtener_ninos_permitidos(request.user)
+    if not ninos_permitidos.filter(pk=responsable.nino.pk).exists():
+        messages.error(request, 'No tienes permiso para editar este responsable.')
+        return redirect('lista_ninos')
     
     if request.method == 'POST':
         form = ResponsableAutorizadoForm(request.POST, request.FILES, instance=responsable)
@@ -505,11 +663,23 @@ def editar_responsable(request, pk):
     }
     return render(request, 'form_responsable.html', context)
 
+
 @login_required
 def eliminar_responsable(request, pk):
     """Vista para eliminar un responsable autorizado"""
     responsable = get_object_or_404(ResponsableAutorizado, pk=pk)
     nino = responsable.nino
+    
+    # Verificar permisos
+    if not (es_admin(request.user) or es_padre(request.user)):
+        messages.error(request, 'No tienes permiso para eliminar responsables.')
+        return redirect('lista_responsables', nino_pk=nino.pk)
+    
+    # Verificar acceso
+    ninos_permitidos = obtener_ninos_permitidos(request.user)
+    if not ninos_permitidos.filter(pk=nino.pk).exists():
+        messages.error(request, 'No tienes permiso para eliminar este responsable.')
+        return redirect('lista_ninos')
     
     if request.method == 'POST':
         nombre = responsable.nombre_completo
@@ -524,50 +694,17 @@ def eliminar_responsable(request, pk):
     return render(request, 'eliminar_responsable.html', context)
 
 
-# ===== VISTAS PARA AULAS =====
-
-@login_required
-def lista_aulas(request):
-    aulas = Aula.objects.all().order_by('nombre')
-    return render(request, 'lista_aulas.html', {'aulas': aulas})
-
-@login_required
-def crear_aula(request):
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        capacidad = request.POST.get('capacidad')
-        activo = request.POST.get('activo') == 'on'
-        if nombre and capacidad:
-            Aula.objects.create(nombre=nombre, capacidad=capacidad, activo=activo)
-            messages.success(request, 'Aula creada exitosamente.')
-            return redirect('lista_aulas')
-    return render(request, 'form_aula.html', {'titulo': 'Crear Aula'})
-
-@login_required
-def editar_aula(request, pk):
-    aula = get_object_or_404(Aula, pk=pk)
-    if request.method == 'POST':
-        aula.nombre = request.POST.get('nombre')
-        aula.capacidad = request.POST.get('capacidad')
-        aula.activo = request.POST.get('activo') == 'on'
-        aula.save()
-        messages.success(request, 'Aula actualizada.')
-        return redirect('lista_aulas')
-    return render(request, 'form_aula.html', {'aula': aula, 'titulo': 'Editar Aula'})
-
-@login_required
-def eliminar_aula(request, pk):
-    aula = get_object_or_404(Aula, pk=pk)
-    if request.method == 'POST':
-        aula.delete()
-        messages.success(request, 'Aula eliminada.')
-        return redirect('lista_aulas')
-    return render(request, 'eliminar_aula.html', {'aula': aula})
-
-
+# ==========================================
+# VISTAS DE ASISTENCIA (ADMIN Y MAESTROS)
+# ==========================================
 
 @login_required
 def registrar_asistencia(request, nino_pk):
+    """Admin y Maestros pueden registrar asistencia"""
+    if not (es_admin(request.user) or es_maestro(request.user)):
+        messages.error(request, 'No tienes permiso para registrar asistencia.')
+        return redirect('lista_ninos')
+    
     nino = get_object_or_404(Nino, pk=nino_pk)
     hoy = timezone.now().date()
 
@@ -587,7 +724,7 @@ def registrar_asistencia(request, nino_pk):
             asistencia.registrado_por = request.user
             asistencia.save()
 
-            # Dentro de registrar_asistencia, después de guardar la asistencia
+            # Enviar notificación si es inasistencia no justificada
             if not asistencia.presente and not asistencia.justificado():
                 if nino.email_responsable:
                     print(">>> Enviando notificación a:", nino.email_responsable)
@@ -612,18 +749,9 @@ def registrar_asistencia(request, nino_pk):
     })
 
 
-
-
-# core/views.py
-
-
-
-
-
-
-
 @login_required
 def enviar_notificacion_manual(request, nino_pk):
+    """Enviar notificación manual de inasistencia"""
     if request.method != 'POST':
         return HttpResponseForbidden()
     
@@ -650,18 +778,27 @@ def enviar_notificacion_manual(request, nino_pk):
     
     return redirect('detalle_nino', pk=nino.pk)
 
+
 @login_required
 def reporte_asistencia_diario(request):
+    """Reporte de asistencia diario - Admin y Maestros"""
+    if not (es_admin(request.user) or es_maestro(request.user)):
+        messages.error(request, 'No tienes permiso para acceder al reporte de asistencia.')
+        return redirect('inicio')
+    
     hoy = timezone.now().date()
-    if request.user.is_superuser:
+    
+    # Admin ve todos los niños asignados
+    if es_admin(request.user):
         ninos_asignados = Nino.objects.filter(
             activo=True,
             asignacion_aula__isnull=False
         ).select_related('asignacion_aula__seccion__aula', 'asignacion_aula__seccion__maestro')
     else:
+        # Maestros ven todos los niños (ya que pueden dar clases a múltiples secciones)
         ninos_asignados = Nino.objects.filter(
             activo=True,
-            asignacion_aula__seccion__maestro__usuario=request.user
+            asignacion_aula__isnull=False
         ).select_related('asignacion_aula__seccion__aula', 'asignacion_aula__seccion__maestro')
 
     # Asegurar orden para regroup
@@ -679,7 +816,7 @@ def reporte_asistencia_diario(request):
         )
         asistencias_hoy[nino.id] = asistencia
 
-    # ✅ Agregar asistencias_json al contexto
+    # Agregar asistencias_json al contexto
     asistencias_dict = {
         nino.id: {
             'presente': asistencia.presente,
@@ -704,6 +841,13 @@ def reporte_asistencia_diario(request):
 def solicitar_permiso_ausencia(request, nino_pk):
     """Vista para que padres/tutores soliciten permisos de ausencia"""
     nino = get_object_or_404(Nino, pk=nino_pk, activo=True)
+    
+    # Verificar que el padre tenga permiso para este niño
+    if es_padre(request.user):
+        ninos_permitidos = obtener_ninos_permitidos(request.user)
+        if not ninos_permitidos.filter(pk=nino_pk).exists():
+            messages.error(request, 'No tienes permiso para solicitar permisos para este niño.')
+            return redirect('lista_ninos')
     
     if request.method == 'POST':
         form = PermisoAusenciaForm(request.POST, request.FILES)
@@ -739,39 +883,53 @@ def solicitar_permiso_ausencia(request, nino_pk):
     return render(request, 'solicitar_permiso.html', context)
 
 
-@staff_member_required
+@login_required
 def lista_permisos_ausencia(request):
-    """Vista para que el staff vea y filtre permisos de ausencia"""
-    # Obtener filtro por estado
-    estado_filtro = request.GET.get('estado', 'pendiente')
-    
-    # Filtrar permisos según el estado
-    if estado_filtro == 'todos':
-        permisos = PermisoAusencia.objects.all()
+    """Vista de permisos según el rol"""
+    if es_padre(request.user):
+        # Padres solo ven los permisos de sus hijos
+        ninos_ids = obtener_ninos_permitidos(request.user).values_list('id', flat=True)
+        permisos = PermisoAusencia.objects.filter(nino_id__in=ninos_ids)
+        permisos = permisos.select_related('nino', 'solicitante', 'aprobado_por').order_by('-fecha_solicitud')
+        
+        paginator = Paginator(permisos, 15)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'page_obj': page_obj,
+            'es_admin': False,
+            'es_padre': True,
+        }
+        return render(request, 'lista_permisos.html', context)
+        
+    elif es_admin(request.user):
+        # Admin ve todos con filtros
+        estado_filtro = request.GET.get('estado', 'pendiente')
+        if estado_filtro == 'todos':
+            permisos = PermisoAusencia.objects.all()
+        else:
+            permisos = PermisoAusencia.objects.filter(estado=estado_filtro)
+        
+        permisos = permisos.select_related('nino', 'solicitante', 'aprobado_por').order_by('-fecha_solicitud')
+        
+        paginator = Paginator(permisos, 15)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        context = {
+            'page_obj': page_obj,
+            'estado_filtro': estado_filtro,
+            'total_pendientes': PermisoAusencia.objects.filter(estado='pendiente').count(),
+            'total_aprobados': PermisoAusencia.objects.filter(estado='aprobado').count(),
+            'total_rechazados': PermisoAusencia.objects.filter(estado='rechazado').count(),
+            'es_admin': True,
+            'es_padre': False,
+        }
+        return render(request, 'lista_permisos.html', context)
     else:
-        permisos = PermisoAusencia.objects.filter(estado=estado_filtro)
-    
-    # Ordenar por fecha de solicitud (más recientes primero)
-    permisos = permisos.select_related('nino', 'solicitante', 'aprobado_por').order_by('-fecha_solicitud')
-    
-    # Paginación
-    paginator = Paginator(permisos, 15)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Contar permisos por estado
-    total_pendientes = PermisoAusencia.objects.filter(estado='pendiente').count()
-    total_aprobados = PermisoAusencia.objects.filter(estado='aprobado').count()
-    total_rechazados = PermisoAusencia.objects.filter(estado='rechazado').count()
-    
-    context = {
-        'page_obj': page_obj,
-        'estado_filtro': estado_filtro,
-        'total_pendientes': total_pendientes,
-        'total_aprobados': total_aprobados,
-        'total_rechazados': total_rechazados,
-    }
-    return render(request, 'lista_permisos.html', context)
+        messages.error(request, 'No tienes acceso a esta sección.')
+        return redirect('inicio')
 
 
 @staff_member_required

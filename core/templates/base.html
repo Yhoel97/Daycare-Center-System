@@ -101,6 +101,7 @@
 </head>
 <body>
     <!-- Navegación -->
+        <!-- REEMPLAZA el <nav> en core/templates/base.html -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="{% url 'inicio' %}">
@@ -116,47 +117,63 @@
                             <i class="bi bi-house-fill"></i> Inicio
                         </a>
                     </li>
+                    
                     {% if user.is_authenticated %}
+                        <!-- NIÑOS: Todos los roles autenticados -->
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'lista_ninos' %}">
                                 <i class="bi bi-people-fill"></i> Niños
                             </a>
                         </li>
 
+                        <!-- ACADÉMICO: Varía según el rol -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-mortarboard-fill"></i> Académico
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                <li><a class="dropdown-item" href="{% url 'lista_aulas' %}">Aulas</a></li>
-                                <li><a class="dropdown-item" href="{% url 'lista_maestros' %}">Maestros</a></li>
-                                <li><a class="dropdown-item" href="{% url 'lista_secciones' %}">Secciones</a></li>
-                                {% if user.is_staff %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'lista_permisos_ausencia' %}">
-                                    <i class="bi bi-file-earmark-medical"></i> Permisos de Ausencia
-                                </a></li>
+                                {% if user.is_staff or user.is_superuser %}
+                                    <!-- ADMIN ve todo -->
+                                    <li><a class="dropdown-item" href="{% url 'lista_aulas' %}">Aulas</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'lista_maestros' %}">Maestros</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'lista_secciones' %}">Secciones</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'lista_permisos_ausencia' %}">
+                                        <i class="bi bi-file-earmark-medical"></i> Permisos de Ausencia
+                                    </a></li>
+                                {% elif user.groups.all.0.name == 'Maestro' %}
+                                    <!-- MAESTRO: solo lectura -->
+                                    <li><a class="dropdown-item" href="{% url 'lista_aulas' %}">Aulas</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'lista_maestros' %}">Maestros</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'lista_secciones' %}">Secciones</a></li>
+                                {% elif user.groups.all.0.name == 'Padre/Tutor' %}
+                                    <!-- PADRE: solo permisos -->
+                                    <li><a class="dropdown-item" href="{% url 'lista_permisos_ausencia' %}">
+                                        <i class="bi bi-file-earmark-medical"></i> Mis Permisos de Ausencia
+                                    </a></li>
                                 {% endif %}
                             </ul>
                         </li>
 
+                        <!-- REGISTRAR: Solo admin -->
+                        {% if user.is_staff or user.is_superuser %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'registrar_nino' %}">
+                                    <i class="bi bi-person-plus-fill"></i> Registrar
+                                </a>
+                            </li>
+                        {% endif %}
 
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'registrar_nino' %}">
-                                <i class="bi bi-person-plus-fill"></i> Registrar
-                            </a>
-                        </li>
-
-                    {% if user.is_authenticated %}
-                        <li class="nav-item">
+                        <!-- ASISTENCIA: Admin y Maestros -->
+                        {% if user.is_staff or user.is_superuser or user.groups.all.0.name == 'Maestro' %}
+                            <li class="nav-item">
                                 <a class="nav-link" href="{% url 'reporte_asistencia_diario' %}">
                                     <i class="bi bi-calendar-check-fill"></i> Asistencia
                                 </a>
-                        </li>
+                            </li>
+                        {% endif %}
                     {% endif %}
-
-
-                    {% endif %}
+                    
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'acerca_de' %}">
                             <i class="bi bi-info-circle-fill"></i> Acerca de
@@ -167,10 +184,18 @@
                             <i class="bi bi-envelope-fill"></i> Contacto
                         </a>
                     </li>
+                    
                     {% if user.is_authenticated %}
                         <li class="nav-item">
                             <span class="nav-link">
                                 <i class="bi bi-person-circle"></i> {{ user.username }}
+                                {% if user.is_staff or user.is_superuser %}
+                                    <span class="badge bg-danger">Admin</span>
+                                {% elif user.groups.all.0.name == 'Maestro' %}
+                                    <span class="badge bg-info">Maestro</span>
+                                {% elif user.groups.all.0.name == 'Padre/Tutor' %}
+                                    <span class="badge bg-success">Padre</span>
+                                {% endif %}
                             </span>
                         </li>
                         <li class="nav-item">

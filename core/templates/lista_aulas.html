@@ -1,31 +1,87 @@
 {% extends 'base.html' %}
-{% block title %}Aulas - Guardería{% endblock %}
+
+{% block title %}Lista de Aulas - Guardería{% endblock %}
+
 {% block content %}
-<div class="container my-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-building"></i> Aulas</h2>
-        <a href="{% url 'crear_aula' %}" class="btn btn-primary">Crear Aula</a>
-    </div>
+<div class="container py-5">
     <div class="row">
-        {% for aula in aulas %}
-        <div class="col-md-4 mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>
+                    <i class="bi bi-door-open-fill"></i> Lista de Aulas
+                </h1>
+                
+                <!-- Solo Admin puede crear aulas -->
+                {% if puede_editar %}
+                    <a href="{% url 'crear_aula' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle-fill"></i> Crear Aula
+                    </a>
+                {% endif %}
+            </div>
+
+            <!-- Mensaje informativo para maestros -->
+            {% if user.groups.all.0.name == 'Maestro' %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle-fill"></i> 
+                    Estás viendo la información en modo solo lectura.
+                </div>
+            {% endif %}
+
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">{{ aula.nombre }}</h5>
-                    <p class="text-muted">Capacidad: {{ aula.capacidad }} niños</p>
-                    <span class="badge {% if aula.activo %}bg-success{% else %}bg-secondary{% endif %}">
-                        {{ aula.get_activo_display }}
-                    </span>
-                    <div class="mt-2">
-                        <a href="{% url 'editar_aula' aula.pk %}" class="btn btn-sm btn-warning">Editar</a>
-                        <a href="{% url 'eliminar_aula' aula.pk %}" class="btn btn-sm btn-danger">Eliminar</a>
-                    </div>
+                    {% if aulas %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Capacidad</th>
+                                        <th>Estado</th>
+                                        {% if puede_editar %}
+                                            <th>Acciones</th>
+                                        {% endif %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for aula in aulas %}
+                                    <tr>
+                                        <td><strong>{{ aula.nombre }}</strong></td>
+                                        <td>{{ aula.capacidad }} niños</td>
+                                        <td>
+                                            {% if aula.activo %}
+                                                <span class="badge bg-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                        {% if puede_editar %}
+                                        <td>
+                                            <a href="{% url 'editar_aula' aula.pk %}" 
+                                               class="btn btn-sm btn-warning" 
+                                               title="Editar">
+                                                <i class="bi bi-pencil-fill"></i>
+                                            </a>
+                                            <a href="{% url 'eliminar_aula' aula.pk %}" 
+                                               class="btn btn-sm btn-danger" 
+                                               title="Eliminar">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </a>
+                                        </td>
+                                        {% endif %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            No hay aulas registradas todavía.
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
-        {% empty %}
-        <p>No hay aulas registradas.</p>
-        {% endfor %}
     </div>
 </div>
 {% endblock %}
